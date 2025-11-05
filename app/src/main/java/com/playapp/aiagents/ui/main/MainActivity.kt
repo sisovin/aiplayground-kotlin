@@ -71,7 +71,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
-                DashboardScreen(viewModel)
+                DashboardScreen(viewModel) { courseId ->
+                    val intent = android.content.Intent(this@MainActivity, com.playapp.aiagents.ui.detail.CourseDetailActivity::class.java)
+                    intent.putExtra("course_id", courseId)
+                    startActivity(intent)
+                }
             }
         }
     }
@@ -79,7 +83,10 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
-fun DashboardScreen(viewModel: AgentViewModel = viewModel()) {
+fun DashboardScreen(
+    viewModel: AgentViewModel = viewModel(),
+    onNavigateToCourseDetail: (Int) -> Unit = {}
+) {
     val agents by viewModel.agents.collectAsState()
     var selectedItem by remember { mutableStateOf(0) }
     
@@ -163,7 +170,9 @@ fun DashboardScreen(viewModel: AgentViewModel = viewModel()) {
                     visible = true,
                     enter = fadeIn()
                 ) {
-                    CourseDetailScreen(agent, index + 1)
+                    CourseDetailScreen(agent, index + 1) {
+                        onNavigateToCourseDetail(agent.id)
+                    }
                 }
             }
         }
@@ -197,7 +206,7 @@ fun Chip(text: String) {
 }
 
 @Composable
-fun CourseDetailScreen(agent: Agent, index: Int) {
+fun CourseDetailScreen(agent: Agent, index: Int, onClick: () -> Unit = {}) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -212,7 +221,8 @@ fun CourseDetailScreen(agent: Agent, index: Int) {
             Box {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(AndroidColor.parseColor(agent.color)))
+                    colors = CardDefaults.cardColors(containerColor = Color(AndroidColor.parseColor(agent.color))),
+                    onClick = onClick
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
