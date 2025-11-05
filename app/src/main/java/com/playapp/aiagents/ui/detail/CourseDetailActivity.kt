@@ -11,10 +11,12 @@ import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -73,6 +75,18 @@ fun CourseDetailScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
+            )
+        },
+        floatingActionButton = {
+            val context = LocalContext.current
+            ExtendedFloatingActionButton(
+                onClick = {
+                    val intent = android.content.Intent(context, com.playapp.aiagents.ui.playground.PlaygroundActivity::class.java)
+                    intent.putExtra("agent_id", courseId)
+                    context.startActivity(intent)
+                },
+                icon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = "Open Playground") },
+                text = { Text("Start Chat") }
             )
         }
     ) { paddingValues ->

@@ -15,7 +15,15 @@
         "Agent Orchestration"
       ],
       "ollamaPrompt": "You are an AI agent expert specialized in multi-agent systems and memory management. Help users understand how agents can maintain context and work together.",
-      "model": "llama2"
+      "model": "llama2",
+      "modelType": "LLAMA2",
+      "samplePrompts": [
+        "Explain how multi-agent systems maintain memory across conversations",
+        "How does CrewAI handle agent orchestration?",
+        "What are the best practices for agent memory management?"
+      ],
+      "setupInstructions": "This agent uses Llama 2 for multi-agent system discussions. Make sure Ollama is running locally with 'llama2' model installed. The agent specializes in memory management and CrewAI framework.",
+      "supportsStreaming": true
     },
     {
       "id": 2,
@@ -32,7 +40,15 @@
         "Optimization"
       ],
       "ollamaPrompt": "You are a prompt engineering expert. Guide users on crafting effective prompts and understanding how LLMs interpret instructions.",
-      "model": "mistral"
+      "model": "mistral",
+      "modelType": "MISTRAL",
+      "samplePrompts": [
+        "How do I write better prompts for AWS services?",
+        "What are the key principles of prompt engineering?",
+        "Give me examples of effective vs ineffective prompts"
+      ],
+      "setupInstructions": "This agent uses Mistral for prompt engineering guidance. Ensure Ollama has 'mistral' model installed. The agent focuses on AWS best practices and prompt optimization techniques.",
+      "supportsStreaming": true
     },
     {
       "id": 3,
@@ -49,7 +65,15 @@
         "Workflows"
       ],
       "ollamaPrompt": "You are a LangGraph specialist. Explain how to build graph-based agent workflows and manage complex state transitions.",
-      "model": "codellama"
+      "model": "codellama",
+      "modelType": "CODELLAMA",
+      "samplePrompts": [
+        "How do I create a simple graph workflow in LangGraph?",
+        "Explain state management in graph-based agents",
+        "What are the advantages of LangGraph over linear chains?"
+      ],
+      "setupInstructions": "This agent uses CodeLlama for code-focused LangGraph discussions. Install 'codellama' model in Ollama. The agent specializes in graph architecture and stateful agent design.",
+      "supportsStreaming": true
     },
     {
       "id": 4,
@@ -66,7 +90,15 @@
         "Limitations"
       ],
       "ollamaPrompt": "You are an LLM agent educator. Teach core concepts of how language models can act as intelligent agents.",
-      "model": "llama2"
+      "model": "llama2",
+      "modelType": "LLAMA2",
+      "samplePrompts": [
+        "What are the fundamental capabilities of LLM agents?",
+        "How do LLMs differ from traditional AI agents?",
+        "What are the current limitations of LLM-based agents?"
+      ],
+      "setupInstructions": "This agent uses Llama 2 for educational discussions about LLM agents. Install 'llama2' model in Ollama. The agent covers both fundamentals and advanced agent concepts.",
+      "supportsStreaming": true
     },
     {
       "id": 5,
@@ -83,7 +115,15 @@
         "Integration"
       ],
       "ollamaPrompt": "You are a LangGraph implementation expert. Show users how to build practical AI agents with real-world applications.",
-      "model": "codellama"
+      "model": "codellama",
+      "modelType": "CODELLAMA",
+      "samplePrompts": [
+        "Show me how to implement a simple agent in LangGraph",
+        "What are common agent patterns in LangGraph?",
+        "How do I integrate LangGraph with external APIs?"
+      ],
+      "setupInstructions": "This agent uses CodeLlama for practical LangGraph implementation guidance. Install 'codellama' model in Ollama. The agent focuses on real-world agent building and integration.",
+      "supportsStreaming": true
     },
     {
       "id": 6,
@@ -100,7 +140,15 @@
         "NVIDIA Tools"
       ],
       "ollamaPrompt": "You are a RAG specialist. Explain how to build retrieval-augmented generation systems for grounded AI responses.",
-      "model": "mistral"
+      "model": "mistral",
+      "modelType": "MISTRAL",
+      "samplePrompts": [
+        "How does RAG improve LLM responses?",
+        "What vector databases work best with RAG?",
+        "Explain the retrieval process in RAG systems"
+      ],
+      "setupInstructions": "This agent uses Mistral for RAG system discussions. Install 'mistral' model in Ollama. The agent covers NVIDIA tools and advanced RAG techniques.",
+      "supportsStreaming": true
     },
     {
       "id": 7,
@@ -117,7 +165,15 @@
         "Architecture"
       ],
       "ollamaPrompt": "You are an AutoGen expert. Guide users through agentic design patterns and multi-agent orchestration.",
-      "model": "llama2"
+      "model": "llama2",
+      "modelType": "LLAMA2",
+      "samplePrompts": [
+        "What are the main design patterns in AutoGen?",
+        "How do I orchestrate multiple agents in AutoGen?",
+        "Show me an example of a robust multi-agent system"
+      ],
+      "setupInstructions": "This agent uses Llama 2 for AutoGen framework discussions. Install 'llama2' model in Ollama. The agent specializes in design patterns and multi-agent architecture.",
+      "supportsStreaming": true
     },
     {
       "id": 8,
@@ -134,7 +190,15 @@
         "Agent State"
       ],
       "ollamaPrompt": "You are an agent memory expert. Explain how AI agents maintain and utilize memory for coherent interactions.",
-      "model": "neural-chat"
+      "model": "neural-chat",
+      "modelType": "NEURAL_CHAT",
+      "samplePrompts": [
+        "How do LLMs maintain context in conversations?",
+        "What are different types of agent memory?",
+        "Explain long-term memory in AI agents"
+      ],
+      "setupInstructions": "This agent uses Neural Chat for memory system discussions. Install 'neural-chat' model in Ollama. The agent focuses on context management and memory architectures.",
+      "supportsStreaming": true
     },
     {
       "id": 9,
@@ -151,7 +215,15 @@
         "Document Processing"
       ],
       "ollamaPrompt": "You are a LlamaIndex specialist. Show users how to build intelligent RAG systems with agentic behaviors.",
-      "model": "mistral"
+      "model": "mistral",
+      "modelType": "MISTRAL",
+      "samplePrompts": [
+        "How do I build agentic RAG with LlamaIndex?",
+        "What are query engines in LlamaIndex?",
+        "Explain document processing in RAG systems"
+      ],
+      "setupInstructions": "This agent uses Mistral for LlamaIndex discussions. Install 'mistral' model in Ollama. The agent covers agentic RAG patterns and advanced query techniques.",
+      "supportsStreaming": true
     }
   ],
   "schema": {
@@ -202,6 +274,33 @@
           "model": {
             "type": "string",
             "description": "Recommended Ollama model for the agent"
+          },
+          "modelType": {
+            "type": "string",
+            "description": "OllamaModel enum value for the agent",
+            "enum": [
+              "LLAMA2",
+              "MISTRAL",
+              "CODELLAMA",
+              "NEURAL_CHAT",
+              "VICUNA",
+              "ORCA_MINI"
+            ]
+          },
+          "samplePrompts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Sample prompts for the agent"
+          },
+          "setupInstructions": {
+            "type": "string",
+            "description": "Setup instructions for the Ollama model"
+          },
+          "supportsStreaming": {
+            "type": "boolean",
+            "description": "Whether the model supports streaming responses"
           }
         },
         "required": [
@@ -214,7 +313,11 @@
           "color",
           "topics",
           "ollamaPrompt",
-          "model"
+          "model",
+          "modelType",
+          "samplePrompts",
+          "setupInstructions",
+          "supportsStreaming"
         ]
       }
     }

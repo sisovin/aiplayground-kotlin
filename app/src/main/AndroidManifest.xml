@@ -35,6 +35,10 @@
             android:exported="false" />
 
         <activity
+            android:name=".ui.playground.PlaygroundActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".ui.cart.CartActivity"
             android:exported="false" />
 
