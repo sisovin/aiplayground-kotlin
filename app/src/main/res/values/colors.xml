@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Colors -->
+    <color name="primary">#6200EE</color>
+    <color name="primary_dark">#3700B3</color>
+    <color name="primary_light">#BB86FC</color>
+    <color name="accent">#03DAC5</color>
+
+    <!-- Secondary Colors -->
+    <color name="secondary">#03DAC5</color>
+    <color name="secondary_dark">#00BFA5</color>
+    <color name="secondary_light">#66FFF7</color>
+
+    <!-- Background Colors -->
+    <color name="background">#FFFFFF</color>
+    <color name="background_dark">#121212</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_dark">#1E1E1E</color>
+
+    <!-- Text Colors -->
+    <color name="text_primary">#000000</color>
+    <color name="text_primary_dark">#FFFFFF</color>
+    <color name="text_secondary">#666666</color>
+    <color name="text_secondary_dark">#B3B3B3</color>
+
+    <!-- Agent Colors (from database.json) -->
+    <color name="agent_1">#6200EE</color>
+    <color name="agent_2">#03DAC5</color>
+    <color name="agent_3">#3700B3</color>
+    <color name="agent_4">#BB86FC</color>
+    <color name="agent_5">#CF6679</color>
+    <color name="agent_6">#03A9F4</color>
+    <color name="agent_7">#4CAF50</color>
+    <color name="agent_8">#FF9800</color>
+    <color name="agent_9">#9C27B0</color>
+
+    <!-- Status Colors -->
+    <color name="success">#4CAF50</color>
+    <color name="warning">#FF9800</color>
+    <color name="error">#F44336</color>
+    <color name="info">#2196F3</color>
+
+    <!-- Card and UI Colors -->
+    <color name="card_background">#F5F5F5</color>
+    <color name="card_background_dark">#2D2D2D</color>
+    <color name="divider">#E0E0E0</color>
+    <color name="divider_dark">#424242</color>
+
+    <!-- Splash Screen Colors -->
+    <color name="splash_background">#6200EE</color>
+    <color name="splash_text">#FFFFFF</color>
+</resources>

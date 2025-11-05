@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Include all shared preferences -->
+    <include domain="sharedpref" path="."/>
+    <!-- Include the app's internal storage -->
+    <include domain="database" path="."/>
+    <!-- Include files in the app's external storage -->
+    <include domain="external" path="."/>
+    <!-- Include files in the app's internal files directory -->
+    <include domain="file" path="files/"/>
+    <!-- Include files in the app's internal cache directory -->
+    <include domain="file" path="cache/"/>
+</full-backup-content>

@@ -1,0 +1,37 @@
+You are Grok Code Fast 1. I have a React app from AI Lovable (Aiagents Playapp) with app.tsx and package. json.
+
+## System Info:
+```ps
+------------------------------------------------------------
+Gradle 9.1.0
+------------------------------------------------------------
+
+Build time:    2025-09-18 13:05:56 UTC
+Revision:      e45a8dbf2470c2e2474ccc25be9f49331406a07e
+
+Kotlin:        2.2.0
+Groovy:        4.0.28
+Ant:           Apache Ant(TM) version 1.10.15 compiled on August 25 2024
+Launcher JVM:  21.0.8 (Oracle Corporation 21.0.8+12-LTS-250)
+Daemon JVM:    C:\Program Files\Java\jdk-21 (from org.gradle.java.home)
+OS:            Windows 11 10.0 amd64
+```
+
+Your task implement:
+1. Inside my current folder, Project Preparation, add Firebase To Project, set it up as an Android Studio with Jetpack compose, compost to UI Design Preview Tools & kotlin & firebase & MVVM Architecture called "aiagents-playapp". Do not create a new folder outside this one, remove all React app in this project, Keeping just Native Kotlin and Java/JVM.
+2. Splash Activity
+3. top Section in Dashboard
+4. 9 Courses Card View (similar to app.tsx mobile view app)
+5. Animation 5 Sliders (e.g Slider 1: Learn How to Build AI Agent Start With These 9 Free Courses similar to app.tsx mobile view app)
+6. Popular Course
+7. Bottom Navigation
+8. Items of Course Card Activity
+9. Detail Activity UI Preview
+10. Detail Activity Backend 
+11. Cart Activity UI Preview
+12. Cart Activity Backend 
+13. Use package name: com.playapp.aiagents
+14. Do not generate app icons. I will provide my own 1024x1024 icon.
+15. Verify gradle and androidmanifest are correct and error-free.
+16. Stop after confirming the android/ folder is fully ready for Android Studio
+17. Create a comprehensive README file for this "Aiagents Playapp" project.
