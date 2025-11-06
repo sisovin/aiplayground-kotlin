@@ -63,6 +63,14 @@
             android:name=".ui.settings.SettingsActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".ui.auth.SigninActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.auth.SignupActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>

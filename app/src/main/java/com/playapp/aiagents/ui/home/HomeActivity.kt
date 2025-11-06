@@ -32,6 +32,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.playapp.aiagents.R
 import com.playapp.aiagents.ui.main.MainActivity
 import com.playapp.aiagents.ui.settings.SettingsActivity
+import com.playapp.aiagents.ui.auth.SignupActivity
 import com.playapp.aiagents.ui.viewmodel.AgentViewModel
 import com.playapp.aiagents.data.repository.AgentRepository
 import androidx.lifecycle.ViewModel
@@ -64,6 +65,9 @@ class HomeActivity : ComponentActivity() {
                     },
                     onSettings = {
                         startActivity(Intent(this, SettingsActivity::class.java))
+                    },
+                    onSignUp = {
+                        startActivity(Intent(this, SignupActivity::class.java))
                     }
                 )
             }
@@ -76,7 +80,8 @@ class HomeActivity : ComponentActivity() {
 fun HomeScreen(
     viewModel: AgentViewModel = viewModel(),
     onGetStarted: () -> Unit = {},
-    onSettings: () -> Unit = {}
+    onSettings: () -> Unit = {},
+    onSignUp: () -> Unit = {}
 ) {
     val agents by viewModel.agents.collectAsState()
     val coroutineScope = rememberCoroutineScope()
@@ -114,6 +119,9 @@ fun HomeScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onSignUp) {
+                        Icon(Icons.Filled.PersonAdd, contentDescription = "Sign Up")
+                    }
                     IconButton(onClick = onSettings) {
                         Icon(Icons.Filled.Settings, contentDescription = "Settings")
                     }
