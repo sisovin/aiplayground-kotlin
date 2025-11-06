@@ -48,6 +48,18 @@
             android:exported="false" />
 
         <activity
+            android:name=".ui.courses.CoursesActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.notifications.NotificationsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.profile.ProfileActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".ui.settings.SettingsActivity"
             android:exported="false" />
 

@@ -46,6 +46,11 @@ import com.playapp.aiagents.data.model.Agent
 import com.playapp.aiagents.data.repository.AgentRepository
 import com.playapp.aiagents.ui.viewmodel.AgentViewModel
 import com.playapp.aiagents.ui.detail.CourseDetailActivity
+import com.playapp.aiagents.ui.home.HomeActivity
+import com.playapp.aiagents.ui.courses.CoursesActivity
+import com.playapp.aiagents.ui.cart.CartActivity
+import com.playapp.aiagents.ui.notifications.NotificationsActivity
+import com.playapp.aiagents.ui.profile.ProfileActivity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
@@ -174,6 +179,7 @@ class MainActivity : ComponentActivity() {
             MaterialTheme {
                 DashboardScreen(
                     viewModel = viewModel,
+                    activityContext = this@MainActivity,
                     onNavigateToCourseDetail = { courseId ->
                         val intent = Intent(this@MainActivity, CourseDetailActivity::class.java)
                         intent.putExtra("course_id", courseId)
@@ -189,6 +195,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun DashboardScreen(
     viewModel: AgentViewModel,
+    activityContext: android.content.Context? = null,
     onNavigateToCourseDetail: (Int) -> Unit = {},
     onNavigateToCourses: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
@@ -310,9 +317,27 @@ fun DashboardScreen(
                         onClick = {
                             selectedItem = index
                             when (index) {
-                                1 -> onNavigateToCourses() // Courses tab
+                                0 -> { // Home
+                                    val intent = Intent(activityContext, HomeActivity::class.java)
+                                    activityContext?.startActivity(intent)
+                                }
+                                1 -> { // Courses
+                                    val intent = Intent(activityContext, CoursesActivity::class.java)
+                                    activityContext?.startActivity(intent)
+                                }
+                                2 -> { // Cart
+                                    val intent = Intent(activityContext, CartActivity::class.java)
+                                    activityContext?.startActivity(intent)
+                                }
+                                3 -> { // Notifications
+                                    val intent = Intent(activityContext, NotificationsActivity::class.java)
+                                    activityContext?.startActivity(intent)
+                                }
+                                4 -> { // Profile
+                                    val intent = Intent(activityContext, ProfileActivity::class.java)
+                                    activityContext?.startActivity(intent)
+                                }
                                 5 -> showMenu = true // Menu tab shows dropdown
-                                // Handle other navigation items
                             }
                         }
                     )
