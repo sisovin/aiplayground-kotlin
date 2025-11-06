@@ -1,6 +1,7 @@
 package com.playapp.aiagents.ui.main
 
 import android.os.Bundle
+import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -15,6 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import android.graphics.Color as AndroidColor
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material.icons.Icons
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -42,17 +45,115 @@ import com.playapp.aiagents.R
 import com.playapp.aiagents.data.model.Agent
 import com.playapp.aiagents.data.repository.AgentRepository
 import com.playapp.aiagents.ui.viewmodel.AgentViewModel
+import com.playapp.aiagents.ui.detail.CourseDetailActivity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Login
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 
 data class NavItem(val label: String, val icon: ImageVector)
+
+@Composable
+fun Chip(text: String) {
+    Surface(
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.primaryContainer
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.bodySmall
+        )
+    }
+}
+
+@Composable
+fun CourseDetailScreen(agent: Agent, index: Int, onClick: () -> Unit = {}) {
+     Box(
+         modifier = Modifier
+             .fillMaxWidth()
+             .wrapContentHeight()
+             .padding(horizontal = 16.dp, vertical = 5.dp)
+     ) {
+         Column(
+             modifier = Modifier.fillMaxSize(),
+             verticalArrangement = Arrangement.Center,
+             horizontalAlignment = Alignment.CenterHorizontally
+         ) {
+             Box {
+                 Card(
+                     modifier = Modifier.fillMaxWidth(),
+                     colors = CardDefaults.cardColors(containerColor = Color(AndroidColor.parseColor(agent.color))),
+                     onClick = onClick
+                 ) {
+                     Column(
+                         modifier = Modifier.padding(16.dp),
+                         horizontalAlignment = Alignment.CenterHorizontally
+                     ) {
+                         Text(
+                             text = agent.title,
+                             style = MaterialTheme.typography.headlineMedium,
+                             color = Color.White,
+                             fontWeight = FontWeight.Bold,
+                             textAlign = TextAlign.Center
+                         )
+                         Spacer(modifier = Modifier.height(8.dp))
+                         Text(
+                             text = "By ${agent.instructor}",
+                             style = MaterialTheme.typography.bodyLarge,
+                             color = Color.White.copy(alpha = 0.8f)
+                         )
+                         Spacer(modifier = Modifier.height(8.dp))
+                         Text(
+                             text = agent.provider,
+                             style = MaterialTheme.typography.bodyMedium,
+                             color = Color.White
+                         )
+                         Spacer(modifier = Modifier.height(8.dp))
+                         Text(
+                             text = agent.duration,
+                             style = MaterialTheme.typography.bodySmall,
+                             color = Color.White.copy(alpha = 0.8f)
+                         )
+                         Spacer(modifier = Modifier.height(16.dp))
+                         Text(
+                             text = agent.description,
+                             style = MaterialTheme.typography.bodyMedium,
+                             color = Color.White,
+                             textAlign = TextAlign.Center
+                         )
+                        Spacer(modifier = Modifier.height(16.dp))
+                         Text(
+                             text = "Topics: ${agent.topics.joinToString(", ")}",
+                             style = MaterialTheme.typography.bodySmall,
+                             color = Color.White.copy(alpha = 0.8f),
+                             textAlign = TextAlign.Center
+                         )
+                     }
+                 }
+
+                 Box(
+                     modifier = Modifier
+                         .align(Alignment.TopEnd)
+                         .padding(10.dp)
+                         .size(32.dp)
+                         .background(Color.Blue, CircleShape),
+                     contentAlignment = Alignment.Center
+                 ) {
+                     Text(text = index.toString(), color = Color.White)
+                 }
+             }
+         }
+     }
+ }
 
 class MainActivity : ComponentActivity() {
     private val viewModel: AgentViewModel by viewModels {
@@ -71,37 +172,56 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
-                DashboardScreen(viewModel) { courseId ->
-                    val intent = android.content.Intent(this@MainActivity, com.playapp.aiagents.ui.detail.CourseDetailActivity::class.java)
-                    intent.putExtra("course_id", courseId)
-                    startActivity(intent)
-                }
+                DashboardScreen(
+                    viewModel = viewModel,
+                    onNavigateToCourseDetail = { courseId ->
+                        val intent = Intent(this@MainActivity, CourseDetailActivity::class.java)
+                        intent.putExtra("course_id", courseId)
+                        startActivity(intent)
+                    }
+                )
             }
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
-@OptIn(ExperimentalFoundationApi::class)
 fun DashboardScreen(
-    viewModel: AgentViewModel = viewModel(),
-    onNavigateToCourseDetail: (Int) -> Unit = {}
+    viewModel: AgentViewModel,
+    onNavigateToCourseDetail: (Int) -> Unit = {},
+    onNavigateToCourses: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {},
+    onNavigateToCart: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
+    onNavigateToHome: () -> Unit = {},
+    onSignIn: () -> Unit = {},
+    onSignOut: () -> Unit = {}
 ) {
     val agents by viewModel.agents.collectAsState()
     var selectedItem by remember { mutableStateOf(0) }
-    
+    var showMenu by remember { mutableStateOf(false) }
+
     val navItems = listOf(
         NavItem("Home", Icons.Filled.Home),
         NavItem("Courses", Icons.AutoMirrored.Filled.MenuBook),
         NavItem("Cart", Icons.Filled.ShoppingCart),
-        NavItem("Profile", Icons.Filled.Person)
-    )
-    val animatedHeight by animateDpAsState(
-        targetValue = 200.dp,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)
+        NavItem("Notifications", Icons.Filled.Notifications),
+        NavItem("Profile", Icons.Filled.Person),
+        NavItem("Menu", Icons.Filled.Menu)
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
+        // Top Bar with Bell Icon
+        TopAppBar(
+            title = { Text("AI Agents", fontWeight = FontWeight.Bold) },
+            actions = {
+                IconButton(onClick = { /* Handle notifications */ }) {
+                    Icon(Icons.Filled.Notifications, contentDescription = "Notifications")
+                }
+            }
+        )
+
         // Top Section
         Card(
             modifier = Modifier
@@ -170,154 +290,224 @@ fun DashboardScreen(
                     visible = true,
                     enter = fadeIn()
                 ) {
-                    CourseDetailScreen(agent, index + 1) {
-                        onNavigateToCourseDetail(agent.id)
-                    }
+                CourseDetailScreen(agent, index + 1) {
+                    onNavigateToCourseDetail(agent.id)
+                }
                 }
             }
         }
 
-        // Bottom Navigation
-        NavigationBar {
-            navItems.forEachIndexed { index, item ->
-                NavigationBarItem(
-                    icon = { androidx.compose.material3.Icon(item.icon, contentDescription = item.label) },
-                    label = { Text(item.label) },
-                    selected = selectedItem == index,
-                    onClick = { selectedItem = index }
+        // Bottom Navigation (Icon only, no labels)
+        Box {
+            NavigationBar {
+                navItems.forEachIndexed { index, item ->
+                    NavigationBarItem(
+                        icon = {
+                            Icon(item.icon, contentDescription = item.label)
+                        },
+                        label = null, // Remove text labels
+                        selected = selectedItem == index,
+                        onClick = {
+                            selectedItem = index
+                            when (index) {
+                                1 -> onNavigateToCourses() // Courses tab
+                                5 -> showMenu = true // Menu tab shows dropdown
+                                // Handle other navigation items
+                            }
+                        }
+                    )
+                }
+            }
+
+            // Dropdown Menu for Menu button
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = { showMenu = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Home") },
+                    onClick = {
+                        showMenu = false
+                        onNavigateToHome()
+                    },
+                    leadingIcon = { Icon(Icons.Filled.Home, contentDescription = "Home") }
+                )
+
+                DropdownMenuItem(
+                    text = { Text("Courses") },
+                    onClick = {
+                        showMenu = false
+                        onNavigateToCourses()
+                    },
+                    leadingIcon = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = "Courses") }
+                )
+
+                DropdownMenuItem(
+                    text = { Text("Cart") },
+                    onClick = {
+                        showMenu = false
+                        onNavigateToCart()
+                    },
+                    leadingIcon = { Icon(Icons.Filled.ShoppingCart, contentDescription = "Cart") }
+                )
+
+                DropdownMenuItem(
+                    text = { Text("Profile") },
+                    onClick = {
+                        showMenu = false
+                        onNavigateToProfile()
+                    },
+                    leadingIcon = { Icon(Icons.Filled.Person, contentDescription = "Profile") }
+                )
+
+                DropdownMenuItem(
+                    text = { Text("Settings") },
+                    onClick = {
+                        showMenu = false
+                        onNavigateToSettings()
+                    },
+                    leadingIcon = { Icon(Icons.Filled.Settings, contentDescription = "Settings") }
+                )
+
+                Divider()
+
+                DropdownMenuItem(
+                    text = { Text("Sign In") },
+                    onClick = {
+                        showMenu = false
+                        onSignIn()
+                    },
+                    leadingIcon = { Icon(Icons.Filled.Login, contentDescription = "Sign In") }
+                )
+
+                DropdownMenuItem(
+                    text = { Text("Sign Out") },
+                    onClick = {
+                        showMenu = false
+                        onSignOut()
+                    },
+                    leadingIcon = { Icon(Icons.Filled.Logout, contentDescription = "Sign Out") }
                 )
             }
         }
-    }
-}
-
-@Composable
-fun Chip(text: String) {
-    Surface(
-        shape = MaterialTheme.shapes.small,
-        color = MaterialTheme.colorScheme.primaryContainer
-    ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            style = MaterialTheme.typography.bodySmall
-        )
-    }
-}
-
 @Composable
 fun CourseDetailScreen(agent: Agent, index: Int, onClick: () -> Unit = {}) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .wrapContentHeight()
-            .padding(horizontal = 16.dp, vertical = 5.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(AndroidColor.parseColor(agent.color))),
-                    onClick = onClick
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = agent.title,
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "By ${agent.instructor}",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White.copy(alpha = 0.8f)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = agent.provider,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = agent.duration,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.8f)
-                        )
+     Box(
+         modifier = Modifier
+             .fillMaxWidth()
+             .wrapContentHeight()
+             .padding(horizontal = 16.dp, vertical = 5.dp)
+     ) {
+         Column(
+             modifier = Modifier.fillMaxSize(),
+             verticalArrangement = Arrangement.Center,
+             horizontalAlignment = Alignment.CenterHorizontally
+         ) {
+             Box {
+                 Card(
+                     modifier = Modifier.fillMaxWidth(),
+                     colors = CardDefaults.cardColors(containerColor = Color(AndroidColor.parseColor(agent.color))),
+                     onClick = onClick
+                 ) {
+                     Column(
+                         modifier = Modifier.padding(16.dp),
+                         horizontalAlignment = Alignment.CenterHorizontally
+                     ) {
+                         Text(
+                             text = agent.title,
+                             style = MaterialTheme.typography.headlineMedium,
+                             color = Color.White,
+                             fontWeight = FontWeight.Bold,
+                             textAlign = TextAlign.Center
+                         )
+                         Spacer(modifier = Modifier.height(8.dp))
+                         Text(
+                             text = "By ${agent.instructor}",
+                             style = MaterialTheme.typography.bodyLarge,
+                             color = Color.White.copy(alpha = 0.8f)
+                         )
+                         Spacer(modifier = Modifier.height(8.dp))
+                         Text(
+                             text = agent.provider,
+                             style = MaterialTheme.typography.bodyMedium,
+                             color = Color.White
+                         )
+                         Spacer(modifier = Modifier.height(8.dp))
+                         Text(
+                             text = agent.duration,
+                             style = MaterialTheme.typography.bodySmall,
+                             color = Color.White.copy(alpha = 0.8f)
+                         )
+                         Spacer(modifier = Modifier.height(16.dp))
+                         Text(
+                             text = agent.description,
+                             style = MaterialTheme.typography.bodyMedium,
+                             color = Color.White,
+                             textAlign = TextAlign.Center
+                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = agent.description,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Topics: ${agent.topics.joinToString(", ")}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.8f),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
+                         Text(
+                             text = "Topics: ${agent.topics.joinToString(", ")}",
+                             style = MaterialTheme.typography.bodySmall,
+                             color = Color.White.copy(alpha = 0.8f),
+                             textAlign = TextAlign.Center
+                         )
+                     }
+                 }
 
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(10.dp)
-                        .size(32.dp)
-                        .background(Color.Blue, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = index.toString(), color = Color.White)
-                }
-            }
-        }
-    }
+                 Box(
+                     modifier = Modifier
+                         .align(Alignment.TopEnd)
+                         .padding(10.dp)
+                         .size(32.dp)
+                         .background(Color.Blue, CircleShape),
+                     contentAlignment = Alignment.Center
+                 ) {
+                     Text(text = index.toString(), color = Color.White)
+                 }
+             }
+         }
+     }
+ }
+}
 }
 
-@Preview(showBackground = true)
-@Composable
-fun AnimatedComposablePreview() {
-    var expanded by remember { mutableStateOf(false) }
-    val animatedSize by animateDpAsState(
-        targetValue = if (expanded) 300.dp else 200.dp,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)
-    )
+// @Preview(showBackground = true)
+// @Composable
+// fun AnimatedComposablePreview() {
+//     var expanded by remember { mutableStateOf(false) }
+//     val animatedSize by animateDpAsState(
+//         targetValue = if (expanded) 300.dp else 200.dp,
+//         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)
+//     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Button(onClick = { expanded = !expanded }) {
-            Text("Toggle Animation")
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        Image(
-            painter = painterResource(id = R.drawable.main_screen_banner),
-            contentDescription = "Animated banner",
-            modifier = Modifier.size(animatedSize),
-            contentScale = ContentScale.Fit
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DashboardPreview() {
-    MaterialTheme {
-        DashboardScreen()
-    }
-}
+//     Column(
+//         modifier = Modifier
+//             .fillMaxSize()
+//             .padding(16.dp),
+//         horizontalAlignment = Alignment.CenterHorizontally,
+//         verticalArrangement = Arrangement.Center
+//     ) {
+//         Button(onClick = { expanded = !expanded }) {
+//             Text("Toggle Animation")
+//         }
+//         Spacer(modifier = Modifier.height(16.dp))
+//         Image(
+//             painter = painterResource(id = R.drawable.main_screen_banner),
+//             contentDescription = "Animated banner",
+//             modifier = Modifier.size(animatedSize),
+//             contentScale = ContentScale.Fit
+//         )
+//     }
+// @Preview(showBackground = true)
+// @Composable
+// fun DashboardPreview() {
+//     MaterialTheme {
+//         // Create a mock ViewModel for preview
+//         val mockViewModel = object : AgentViewModel(
+//             application = androidx.compose.ui.platform.LocalContext.current as android.app.Application,
+//             repository = AgentRepository()
+//         ) {}
+//         DashboardScreen(mockViewModel)
+//     }
+// }

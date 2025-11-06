@@ -18,7 +18,9 @@ data class Agent(
     val modelType: OllamaModel = OllamaModel.LLAMA2,
     val samplePrompts: List<String> = emptyList(),
     val setupInstructions: String = "",
-    val supportsStreaming: Boolean = true
+    val supportsStreaming: Boolean = true,
+    val videoTutorials: List<VideoTutorial> = emptyList(),
+    val codeExamples: List<CodeExample> = emptyList()
 )
 
 enum class OllamaModel(val displayName: String, val description: String) {
@@ -45,4 +47,53 @@ data class ChatSession(
     val messages: List<ChatMessage> = emptyList(),
     val createdAt: Long = System.currentTimeMillis(),
     val lastModified: Long = System.currentTimeMillis()
+)
+
+data class UserProgress(
+    val userId: String = "",
+    val courses: Map<String, CourseProgress> = emptyMap(),
+    val totalTimeSpent: Long = 0, // in milliseconds
+    val lastActive: Long = System.currentTimeMillis(),
+    val achievements: List<String> = emptyList()
+)
+
+data class CourseProgress(
+    val courseId: Int = 0,
+    val completionPercentage: Float = 0f, // 0.0 to 1.0
+    val timeSpent: Long = 0, // in milliseconds
+    val lastAccessed: Long = System.currentTimeMillis(),
+    val completedTopics: List<String> = emptyList(),
+    val agentProgress: Map<String, AgentProgress> = emptyMap(),
+    val downloadedCode: Boolean = false,
+    val watchedVideos: List<String> = emptyList()
+)
+
+data class AgentProgress(
+    val agentId: Int = 0,
+    val sessionsCount: Int = 0,
+    val totalMessages: Int = 0,
+    val timeSpent: Long = 0, // in milliseconds
+    val lastUsed: Long = System.currentTimeMillis(),
+    val favoritePrompts: List<String> = emptyList(),
+    val skillLevel: Int = 1 // 1-5 skill level
+)
+
+data class VideoTutorial(
+    val id: String = "",
+    val title: String = "",
+    val description: String = "",
+    val url: String = "",
+    val duration: String = "", // e.g., "10:30"
+    val thumbnailUrl: String = "",
+    val order: Int = 0
+)
+
+data class CodeExample(
+    val id: String = "",
+    val title: String = "",
+    val description: String = "",
+    val language: String = "", // e.g., "kotlin", "python", "javascript"
+    val code: String = "",
+    val downloadUrl: String = "",
+    val fileName: String = ""
 )

@@ -22,7 +22,10 @@ class AgentRepository(private val firebaseService: FirebaseService = FirebaseSer
         // Then try to fetch from Firebase and emit if available
         try {
             val firebaseAgents = firebaseService.getAgents()
-            firebaseAgents.collect { agents ->
+            firebaseAgents.timeout(5.seconds).catch { e ->
+                // Firebase failed, but local data already emitted
+                e.printStackTrace()
+            }.collect { agents ->
                 if (agents.isNotEmpty()) {
                     emit(agents)
                 }

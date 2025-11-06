@@ -23,7 +23,47 @@
         "What are the best practices for agent memory management?"
       ],
       "setupInstructions": "This agent uses Llama 2 for multi-agent system discussions. Make sure Ollama is running locally with 'llama2' model installed. The agent specializes in memory management and CrewAI framework.",
-      "supportsStreaming": true
+      "supportsStreaming": true,
+      "videoTutorials": [
+        {
+          "id": "crewai-intro",
+          "title": "Introduction to CrewAI Framework",
+          "description": "Learn the basics of CrewAI and how to set up multi-agent systems",
+          "url": "https://www.youtube.com/watch?v=example1",
+          "duration": "15:30",
+          "thumbnailUrl": "https://img.youtube.com/vi/example1/maxresdefault.jpg",
+          "order": 1
+        },
+        {
+          "id": "memory-management",
+          "title": "Agent Memory Management",
+          "description": "Understanding how agents maintain context and memory",
+          "url": "https://www.youtube.com/watch?v=example2",
+          "duration": "22:45",
+          "thumbnailUrl": "https://img.youtube.com/vi/example2/maxresdefault.jpg",
+          "order": 2
+        }
+      ],
+      "codeExamples": [
+        {
+          "id": "crewai-basic",
+          "title": "Basic CrewAI Agent Setup",
+          "description": "Simple example of creating and running a CrewAI agent",
+          "language": "python",
+          "code": "from crewai import Agent, Task, Crew\n\n# Create an agent\nagent = Agent(\n    role='Research Analyst',\n    goal='Analyze market trends',\n    backstory='You are an expert market analyst'\n)\n\n# Create a task\ntask = Task(\n    description='Analyze current market trends',\n    agent=agent\n)\n\n# Create and run crew\ncrew = Crew(agents=[agent], tasks=[task])\ncrew.kickoff()",
+          "downloadUrl": "https://example.com/download/crewai-basic.py",
+          "fileName": "crewai_basic_example.py"
+        },
+        {
+          "id": "memory-agent",
+          "title": "Agent with Memory",
+          "description": "Example of implementing memory in CrewAI agents",
+          "language": "python",
+          "code": "from crewai import Agent, Task, Crew\nfrom crewai.memory import LongTermMemory\n\n# Create memory-enabled agent\nagent = Agent(\n    role='Conversation Agent',\n    goal='Maintain context in conversations',\n    backstory='You remember previous conversations',\n    memory=LongTermMemory()\n)\n\n# Agent will now maintain memory across interactions",
+          "downloadUrl": "https://example.com/download/memory-agent.py",
+          "fileName": "memory_agent_example.py"
+        }
+      ]
     },
     {
       "id": 2,
@@ -48,7 +88,38 @@
         "Give me examples of effective vs ineffective prompts"
       ],
       "setupInstructions": "This agent uses Mistral for prompt engineering guidance. Ensure Ollama has 'mistral' model installed. The agent focuses on AWS best practices and prompt optimization techniques.",
-      "supportsStreaming": true
+      "supportsStreaming": true,
+      "videoTutorials": [
+        {
+          "id": "aws-prompt-basics",
+          "title": "AWS Prompt Engineering Basics",
+          "description": "Learn fundamental prompt engineering techniques for AWS services",
+          "url": "https://www.youtube.com/watch?v=aws-example1",
+          "duration": "18:20",
+          "thumbnailUrl": "https://img.youtube.com/vi/aws-example1/maxresdefault.jpg",
+          "order": 1
+        },
+        {
+          "id": "aws-bedrock-prompts",
+          "title": "Prompt Engineering with Amazon Bedrock",
+          "description": "Advanced prompting techniques using Amazon Bedrock models",
+          "url": "https://www.youtube.com/watch?v=aws-example2",
+          "duration": "25:10",
+          "thumbnailUrl": "https://img.youtube.com/vi/aws-example2/maxresdefault.jpg",
+          "order": 2
+        }
+      ],
+      "codeExamples": [
+        {
+          "id": "aws-bedrock-prompt",
+          "title": "AWS Bedrock Prompt Example",
+          "description": "Example of crafting effective prompts for AWS Bedrock",
+          "language": "python",
+          "code": "import boto3\n\n# Initialize Bedrock client\nbedrock = boto3.client('bedrock-runtime')\n\n# Effective prompt for AWS service recommendations\nprompt = \"\"\"\nYou are an AWS Solutions Architect. A customer needs to build a serverless web application.\n\nProvide a detailed recommendation including:\n1. AWS services to use (Lambda, API Gateway, DynamoDB, etc.)\n2. Architecture diagram description\n3. Cost optimization tips\n4. Security best practices\n\nCustomer requirements:\n- Handle 10,000 concurrent users\n- Global deployment\n- Real-time data processing\n- Cost-effective solution\n\"\"\"\n\n# Use the prompt with Bedrock\nresponse = bedrock.invoke_model(\n    modelId='anthropic.claude-3-sonnet-20240229-v1:0',\n    body=json.dumps({\n        'prompt': prompt,\n        'max_tokens_to_sample': 2000\n    })\n)",
+          "downloadUrl": "https://example.com/download/aws-bedrock-prompt.py",
+          "fileName": "aws_bedrock_prompt_example.py"
+        }
+      ]
     },
     {
       "id": 3,

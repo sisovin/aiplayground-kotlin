@@ -1,5 +1,6 @@
 package com.playapp.aiagents.ui.playground
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -12,12 +13,18 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.runtime.*
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,9 +36,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.playapp.aiagents.data.model.*
-import com.playapp.aiagents.data.repository.AgentRepository
+import com.playapp.aiagents.data.repository.ChatRepository
+import com.playapp.aiagents.data.service.OllamaApiService
 import com.playapp.aiagents.ui.viewmodel.AgentViewModel
+import com.playapp.aiagents.data.model.Agent
+import com.playapp.aiagents.data.model.OllamaModel
+import com.playapp.aiagents.data.model.ChatMessage
+import com.playapp.aiagents.data.model.ChatSession
+import com.playapp.aiagents.data.repository.AgentRepository
+import com.playapp.aiagents.data.repository.ProgressRepository
 import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -40,6 +53,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.window.Dialog
 import kotlinx.coroutines.launch
+import androidx.lifecycle.lifecycleScope
+import com.playapp.aiagents.ui.video.VideoPlayerDialog
 
 class PlaygroundActivity : ComponentActivity() {
     private val viewModel: AgentViewModel by viewModels {
@@ -54,60 +69,240 @@ class PlaygroundActivity : ComponentActivity() {
         }
     }
 
+    private lateinit var chatRepository: ChatRepository
+    private lateinit var ollamaApiService: OllamaApiService
+    private lateinit var progressRepository: ProgressRepository
+    private var startTime: Long = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val agentId = intent.getIntExtra("agent_id", -1)
 
+        // Debug logging
+        println("PlaygroundActivity: Received agent_id = $agentId")
+
+        // Initialize services
+        chatRepository = ChatRepository(this)
+        progressRepository = ProgressRepository()
+        startTime = System.currentTimeMillis()
+
+        // Get Ollama server URL from preferences
+        val prefs = getSharedPreferences("aiagents_settings", Context.MODE_PRIVATE)
+        val ollamaServerUrl = prefs.getString("ollama_server_url", "http://localhost:11434") ?: "http://localhost:11434"
+        ollamaApiService = OllamaApiService(baseUrl = ollamaServerUrl)
+
+        // Track agent usage
+        lifecycleScope.launch {
+            try {
+                progressRepository.updateAgentProgress("user_123", agentId, agentId,
+                    com.playapp.aiagents.data.model.AgentProgress(
+                        agentId = agentId,
+                        sessionsCount = 1, // Will be incremented properly later
+                        lastUsed = System.currentTimeMillis()
+                    )
+                )
+                println("PlaygroundActivity: Agent progress updated for agent $agentId")
+            } catch (e: Exception) {
+                println("PlaygroundActivity: Error updating agent progress: ${e.message}")
+                // Handle error silently
+            }
+        }
+
         setContent {
             MaterialTheme {
-                PlaygroundScreen(viewModel, agentId) {
+                PlaygroundScreen(viewModel, agentId, chatRepository, ollamaApiService, this, progressRepository) {
                     finish() // Go back when back button is pressed
                 }
             }
         }
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Track time spent in playground
+        val timeSpent = System.currentTimeMillis() - startTime
+        val agentId = intent.getIntExtra("agent_id", -1)
+
+        lifecycleScope.launch {
+            try {
+                progressRepository.addTimeSpent("user_123", agentId, timeSpent)
+            } catch (e: Exception) {
+                // Handle error silently
+            }
+        }
+    }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun PlaygroundScreen(
     viewModel: AgentViewModel = viewModel(),
     agentId: Int = -1,
+    chatRepository: ChatRepository? = null,
+    ollamaApiService: OllamaApiService? = null,
+    activityContext: android.content.Context? = null,
+    progressRepository: ProgressRepository? = null,
     onBackPressed: () -> Unit = {}
 ) {
     val agents by viewModel.agents.collectAsState()
     val agent = agents.find { it.id == agentId }
-    val context = LocalContext.current
 
+    // Tab state
+    val pagerState = rememberPagerState(pageCount = { 3 })
+    val tabTitles = listOf("Learn", "Code", "Chat")
+
+    // Progress state
+    var progressPercentage by remember { mutableStateOf(0) }
+    var isCompleted by remember { mutableStateOf(false) }
+
+    // Chat state
     var currentModel by remember { mutableStateOf(agent?.modelType ?: OllamaModel.LLAMA2) }
     var isStreaming by remember { mutableStateOf(true) }
     var showModelSelector by remember { mutableStateOf(false) }
     var showSetupDialog by remember { mutableStateOf(false) }
     var showSamplePrompts by remember { mutableStateOf(false) }
-    var chatSessions by remember { mutableStateOf(listOf<ChatSession>()) }
+    var showVideoTutorials by remember { mutableStateOf(false) }
     var currentSession by remember { mutableStateOf<ChatSession?>(null) }
     var messageText by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
-
     val listState = rememberLazyListState()
+
+    // Video player state
+    var showVideoPlayer by remember { mutableStateOf(false) }
+    var selectedVideo by remember { mutableStateOf<com.playapp.aiagents.data.model.VideoTutorial?>(null) }
+
     val coroutineScope = rememberCoroutineScope()
+
+    // Initialize session
+    LaunchedEffect(agentId) {
+        if (agentId != -1 && chatRepository != null) {
+            val sessionId = "session_${agentId}_${System.currentTimeMillis()}"
+            currentSession = ChatSession(
+                id = sessionId,
+                agentId = agentId,
+                messages = emptyList(),
+                createdAt = System.currentTimeMillis()
+            )
+        }
+    }
+
+    // Send message function
+    suspend fun sendMessage(message: String, model: OllamaModel, agent: Agent?, chatRepository: ChatRepository?, ollamaApiService: OllamaApiService?, isStreaming: Boolean) {
+        if (message.isBlank() || chatRepository == null || ollamaApiService == null || agent == null) return
+
+        isLoading = true
+        val sessionId = currentSession?.id ?: return
+        val systemPrompt = agent.ollamaPrompt ?: ""
+
+        val userMessage = ChatMessage(
+            id = java.util.UUID.randomUUID().toString(),
+            content = message,
+            isUser = true,
+            timestamp = System.currentTimeMillis(),
+            model = model.displayName
+        )
+
+        chatRepository!!.addMessage(sessionId, userMessage)
+        val updatedMessages = currentSession?.messages?.toMutableList() ?: mutableListOf()
+        updatedMessages.add(userMessage)
+        currentSession = currentSession?.copy(messages = updatedMessages)
+
+        coroutineScope.launch {
+            try {
+                var aiMessageId = ""
+
+                if (isStreaming) {
+                    ollamaApiService!!.sendChatMessageStreaming(message, model, systemPrompt).collect { (partialResponse, metrics) ->
+                        if (aiMessageId.isEmpty()) {
+                            aiMessageId = "ai_${sessionId}_${System.currentTimeMillis()}"
+                        }
+
+                        if (metrics != null) {
+                            // Final response with metrics
+                            val aiMessage = ChatMessage(
+                                id = aiMessageId,
+                                content = partialResponse,
+                                isUser = false,
+                                timestamp = System.currentTimeMillis(),
+                                model = model.displayName
+                            )
+                            chatRepository!!.addMessageWithMetrics(sessionId, aiMessage, metrics)
+                            val finalMessages = currentSession?.messages?.toMutableList() ?: mutableListOf()
+                            finalMessages.add(aiMessage)
+                            currentSession = currentSession?.copy(messages = finalMessages)
+                            isLoading = false
+                        } else {
+                            // Intermediate streaming update - could update UI here
+                        }
+                    }
+                } else {
+                    // Handle non-streaming response
+                    val (response, metrics) = ollamaApiService!!.sendChatMessage(message, model, systemPrompt)
+
+                    val aiMessage = ChatMessage(
+                        id = java.util.UUID.randomUUID().toString(),
+                        content = response,
+                        isUser = false,
+                        timestamp = System.currentTimeMillis(),
+                        model = model.displayName
+                    )
+                    chatRepository!!.addMessageWithMetrics(sessionId, aiMessage, metrics)
+                    val updatedMessages = currentSession?.messages?.toMutableList() ?: mutableListOf()
+                    updatedMessages.add(aiMessage)
+                    currentSession = currentSession?.copy(messages = updatedMessages)
+                    isLoading = false
+                }
+
+            } catch (e: Exception) {
+                println("Error sending message: ${e.message}")
+                isLoading = false
+                // Handle error - could show error message in UI
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Text(agent?.title ?: "AI Playground")
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Text(
-                            text = currentModel.displayName,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = agent?.title ?: "AI Playground",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.weight(1f)
                         )
+
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        // Progress tracking
+                        if (!isCompleted) {
+                            Text(
+                                text = "${progressPercentage}% complete",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            Button(
+                                onClick = {
+                                    // Mark as complete logic
+                                    isCompleted = true
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Text("Mark as Complete", style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -126,156 +321,72 @@ fun PlaygroundScreen(
                         Icon(Icons.Filled.Lightbulb, contentDescription = "Sample Prompts")
                     }
 
-                    // Streaming Toggle
-                    IconButton(onClick = { isStreaming = !isStreaming }) {
-                        Icon(
-                            if (isStreaming) Icons.Filled.Wifi else Icons.Filled.WifiOff,
-                            contentDescription = "Toggle Streaming",
-                            tint = if (isStreaming) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    // Video Tutorials
+                    IconButton(onClick = { showVideoTutorials = true }) {
+                        Icon(Icons.Filled.PlayArrow, contentDescription = "Video Tutorials")
                     }
                 }
             )
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            // Chat Messages Area
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                state = listState,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+        Column(modifier = Modifier.padding(paddingValues)) {
+            // Tab Row
+            TabRow(
+                selectedTabIndex = pagerState.currentPage,
+                indicator = { tabPositions ->
+                    TabRowDefaults.Indicator(
+                        modifier = Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage])
+                    )
+                }
             ) {
-                if (currentSession?.messages?.isEmpty() == true) {
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.Chat,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(48.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "Start a conversation with ${agent?.title ?: "this AI agent"}",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    textAlign = TextAlign.Center
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "Ask questions, get help with ${agent?.topics?.joinToString(", ") ?: "various topics"}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                tabTitles.forEachIndexed { index, title ->
+                    Tab(
+                        selected = pagerState.currentPage == index,
+                        onClick = {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(index)
                             }
-                        }
-                    }
-                }
-
-                currentSession?.messages?.let { messages ->
-                    items(messages) { message ->
-                        ChatMessageBubble(message)
-                    }
-                }
-
-                if (isLoading) {
-                    item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Start
-                        ) {
-                            Card(
-                                modifier = Modifier.widthIn(max = 280.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                                )
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(16.dp),
-                                        strokeWidth = 2.dp
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "AI is thinking...",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                            }
-                        }
-                    }
+                        },
+                        text = { Text(title) }
+                    )
                 }
             }
 
-            // Message Input Area
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    verticalAlignment = Alignment.Bottom
-                ) {
-                    OutlinedTextField(
-                        value = messageText,
-                        onValueChange = { messageText = it },
-                        modifier = Modifier.weight(1f),
-                        placeholder = { Text("Type your message...") },
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                        keyboardActions = KeyboardActions(onSend = {
-                            if (messageText.isNotBlank()) {
-                                sendMessage(messageText, currentModel)
+            // Tab Content
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                when (page) {
+                    0 -> LearnTab(agent)
+                    1 -> CodeTab(agent)
+                    2 -> ChatTab(
+                        agent = agent,
+                        currentSession = currentSession,
+                        messageText = messageText,
+                        onMessageTextChange = { messageText = it },
+                        isLoading = isLoading,
+                        listState = listState,
+                        onSendMessage = {
+                            coroutineScope.launch {
+                                sendMessage(
+                                    messageText,
+                                    currentModel,
+                                    agent,
+                                    chatRepository,
+                                    ollamaApiService,
+                                    isStreaming
+                                )
                                 messageText = ""
                             }
-                        }),
-                        maxLines = 4
+                        }
                     )
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    FloatingActionButton(
-                        onClick = {
-                            if (messageText.isNotBlank()) {
-                                sendMessage(messageText, currentModel)
-                                messageText = ""
-                            }
-                        },
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.Send,
-                            contentDescription = "Send"
-                        )
-                    }
                 }
             }
         }
     }
 
-    // Model Selector Dialog
+    // Dialogs
     if (showModelSelector) {
         ModelSelectorDialog(
             currentModel = currentModel,
@@ -284,7 +395,6 @@ fun PlaygroundScreen(
         )
     }
 
-    // Setup Instructions Dialog
     if (showSetupDialog) {
         SetupInstructionsDialog(
             agent = agent,
@@ -292,7 +402,6 @@ fun PlaygroundScreen(
         )
     }
 
-    // Sample Prompts Dialog
     if (showSamplePrompts) {
         SamplePromptsDialog(
             prompts = agent?.samplePrompts ?: emptyList(),
@@ -303,7 +412,361 @@ fun PlaygroundScreen(
             onDismiss = { showSamplePrompts = false }
         )
     }
+
+    if (showVideoTutorials) {
+        VideoTutorialsDialog(
+            videos = agent?.videoTutorials ?: emptyList(),
+            onVideoSelected = { video ->
+                selectedVideo = video
+                showVideoPlayer = true
+                showVideoTutorials = false
+                // Track video watching progress
+                coroutineScope.launch {
+                    progressRepository?.markVideoWatched("user_123", agentId, video.id)
+                }
+            },
+            onDismiss = { showVideoTutorials = false }
+        )
+    }
+
+    if (showVideoPlayer && selectedVideo != null) {
+        VideoPlayerDialog(
+            video = selectedVideo!!,
+            onDismiss = {
+                showVideoPlayer = false
+                selectedVideo = null
+            }
+        )
+    }
 }
+
+// Learn Tab
+@Composable
+fun LearnTab(agent: Agent?) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            // Course Topics Section
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Filled.MenuBook,
+                            contentDescription = "Course Topics",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Course Topics",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Topics list
+                    agent?.topics?.forEach { topic ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        ) {
+                            Text("• ", color = MaterialTheme.colorScheme.primary)
+                            Text(
+                                text = topic,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Description
+                    Text(
+                        text = agent?.description ?: "Learn about AI agent development and implementation.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        item {
+            // Video Tutorial Section
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Filled.PlayArrow,
+                            contentDescription = "Video Tutorial",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Video Tutorial",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Video container placeholder
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    Icons.Filled.PlayCircle,
+                                    contentDescription = "Play Video",
+                                    modifier = Modifier.size(48.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Embedded YouTube Video",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Code Tab
+@Composable
+fun CodeTab(agent: Agent?) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            // Starter Code Section
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "Starter Code",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        IconButton(
+                            onClick = { /* Download code */ },
+                            modifier = Modifier.background(
+                                color = Color.Yellow.copy(alpha = 0.1f),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                        ) {
+                            Icon(
+                                Icons.Filled.Download,
+                                contentDescription = "Download Code",
+                                tint = Color.Yellow
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Code placeholder
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "// Code example for ${agent?.title ?: "AI Agent"}",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "import com.example.aiagent.*\n\nfun main() {\n    // Your AI agent code here\n    val agent = AIAgent()\n    agent.initialize()\n}",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Chat Tab
+@Composable
+fun ChatTab(
+    agent: Agent?,
+    currentSession: ChatSession?,
+    messageText: String,
+    onMessageTextChange: (String) -> Unit,
+    isLoading: Boolean,
+    listState: androidx.compose.foundation.lazy.LazyListState,
+    onSendMessage: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Chat header
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Filled.Chat,
+                        contentDescription = "Chat",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Try It with Ollama",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Ask this AI agent anything about LLMs operating systems: agent memory powered by Ollama (Local LLM)",
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+
+        // Chat messages area
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            state = listState,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(vertical = 16.dp)
+        ) {
+            currentSession?.messages?.let { messages ->
+                items(messages) { message ->
+                    ChatMessageBubble(message)
+                }
+            }
+
+            if (isLoading) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        Card(
+                            modifier = Modifier.widthIn(max = 280.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "AI is thinking...",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Message input area
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                OutlinedTextField(
+                    value = messageText,
+                    onValueChange = onMessageTextChange,
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("Ask about ${agent?.title ?: "AI agents"}...") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                    keyboardActions = KeyboardActions(onSend = { onSendMessage() }),
+                    maxLines = 5
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                FloatingActionButton(
+                    onClick = onSendMessage,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.Send,
+                        contentDescription = "Send Message"
+                    )
+                }
+            }
+        }
+    }
+}
+
+// Function for sending messages with actual Ollama API integration
 
 @Composable
 fun ChatMessageBubble(message: ChatMessage) {
@@ -352,63 +815,16 @@ fun ModelSelectorDialog(
     onDismiss: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Column(modifier = Modifier.padding(24.dp)) {
-                Text(
-                    text = "Select AI Model",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-
+        Card(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("Select Model", style = MaterialTheme.typography.headlineSmall)
                 Spacer(modifier = Modifier.height(16.dp))
-
                 OllamaModel.values().forEach { model ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onModelSelected(model)
-                                onDismiss()
-                            }
-                            .padding(vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = model == currentModel,
-                            onClick = {
-                                onModelSelected(model)
-                                onDismiss()
-                            }
-                        )
-
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = model.displayName,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = model.description,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                    TextButton(onClick = { onModelSelected(model); onDismiss() }) {
+                        Text(model.displayName)
                     }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.align(Alignment.End)
-                ) {
+                TextButton(onClick = onDismiss) {
                     Text("Cancel")
                 }
             }
@@ -422,46 +838,13 @@ fun SetupInstructionsDialog(
     onDismiss: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Column(modifier = Modifier.padding(24.dp)) {
-                Text(
-                    text = "Setup Instructions",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-
+        Card(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("Setup Instructions", style = MaterialTheme.typography.headlineSmall)
                 Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = agent?.setupInstructions ?: """
-                        To use this AI agent, you need to:
-
-                        1. Install Ollama from https://ollama.ai
-                        2. Pull the required model: `ollama pull ${agent?.model ?: "llama2"}`
-                        3. Start Ollama server: `ollama serve`
-                        4. Configure your API endpoint in settings
-                        5. Test the connection
-
-                        For more information, visit the Ollama documentation.
-                    """.trimIndent(),
-                    style = MaterialTheme.typography.bodyLarge,
-                    lineHeight = MaterialTheme.typography.bodyLarge.lineHeight * 1.2f
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text("Close")
-                    }
+                Text("Setup instructions for ${agent?.title ?: "agent"}")
+                TextButton(onClick = onDismiss) {
+                    Text("Close")
                 }
             }
         }
@@ -475,56 +858,16 @@ fun SamplePromptsDialog(
     onDismiss: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Column(modifier = Modifier.padding(24.dp)) {
-                Text(
-                    text = "Sample Prompts",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-
+        Card(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("Sample Prompts", style = MaterialTheme.typography.headlineSmall)
                 Spacer(modifier = Modifier.height(16.dp))
-
-                if (prompts.isEmpty()) {
-                    Text(
-                        text = "No sample prompts available for this agent.",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.heightIn(max = 300.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(prompts) { prompt ->
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onPromptSelected(prompt) },
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                                )
-                            ) {
-                                Text(
-                                    text = prompt,
-                                    modifier = Modifier.padding(16.dp),
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                            }
-                        }
+                prompts.forEach { prompt ->
+                    TextButton(onClick = { onPromptSelected(prompt); onDismiss() }) {
+                        Text(prompt.take(50) + if (prompt.length > 50) "..." else "")
                     }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.align(Alignment.End)
-                ) {
+                TextButton(onClick = onDismiss) {
                     Text("Close")
                 }
             }
@@ -532,11 +875,28 @@ fun SamplePromptsDialog(
     }
 }
 
-// Mock function for sending messages (replace with actual Ollama API call)
-private fun sendMessage(message: String, model: OllamaModel) {
-    // TODO: Implement actual Ollama API integration
-    // This is a placeholder for the actual implementation
-    println("Sending message: $message with model: ${model.displayName}")
+@Composable
+fun VideoTutorialsDialog(
+    videos: List<com.playapp.aiagents.data.model.VideoTutorial>,
+    onVideoSelected: (com.playapp.aiagents.data.model.VideoTutorial) -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("Video Tutorials", style = MaterialTheme.typography.headlineSmall)
+                Spacer(modifier = Modifier.height(16.dp))
+                videos.forEach { video ->
+                    TextButton(onClick = { onVideoSelected(video); onDismiss() }) {
+                        Text(video.title)
+                    }
+                }
+                TextButton(onClick = onDismiss) {
+                    Text("Close")
+                }
+            }
+        }
+    }
 }
 
 @Preview(showBackground = true)

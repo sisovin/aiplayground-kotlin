@@ -12,10 +12,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import android.graphics.Color as AndroidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -26,8 +30,14 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.playapp.aiagents.data.model.Agent
 import com.playapp.aiagents.data.repository.AgentRepository
+import com.playapp.aiagents.data.repository.ProgressRepository
 import com.playapp.aiagents.ui.viewmodel.AgentViewModel
-import android.graphics.Color as AndroidColor
+import com.playapp.aiagents.ui.video.VideoPlayerDialog
+import com.playapp.aiagents.ui.video.openVideoExternally
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.launch
 
 class CourseDetailActivity : ComponentActivity() {
     private val viewModel: AgentViewModel by viewModels {
@@ -42,15 +52,45 @@ class CourseDetailActivity : ComponentActivity() {
         }
     }
 
+    private lateinit var progressRepository: ProgressRepository
+    private var startTime: Long = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val courseId = intent.getIntExtra("course_id", -1)
 
+        progressRepository = ProgressRepository()
+        startTime = System.currentTimeMillis()
+
+        // Track that user accessed this course
+        lifecycleScope.launch {
+            try {
+                progressRepository.updateLastAccessed("user_123", courseId) // TODO: Get actual user ID
+            } catch (e: Exception) {
+                // Handle error silently for now
+            }
+        }
+
         setContent {
             MaterialTheme {
-                CourseDetailScreen(viewModel, courseId) {
+                CourseDetailScreen(viewModel, courseId, progressRepository) {
                     finish() // Go back when back button is pressed
                 }
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Track time spent on this course
+        val timeSpent = System.currentTimeMillis() - startTime
+        val courseId = intent.getIntExtra("course_id", -1)
+
+        lifecycleScope.launch {
+            try {
+                progressRepository.addTimeSpent("user_123", courseId, timeSpent) // TODO: Get actual user ID
+            } catch (e: Exception) {
+                // Handle error silently for now
             }
         }
     }
@@ -61,10 +101,16 @@ class CourseDetailActivity : ComponentActivity() {
 fun CourseDetailScreen(
     viewModel: AgentViewModel = viewModel(),
     courseId: Int = -1,
+    progressRepository: ProgressRepository? = null,
     onBackPressed: () -> Unit = {}
 ) {
     val agents by viewModel.agents.collectAsState()
     val course = agents.find { it.id == courseId }
+    val coroutineScope = rememberCoroutineScope()
+
+    // Video player state
+    var showVideoPlayer by remember { mutableStateOf(false) }
+    var selectedVideo by remember { mutableStateOf<com.playapp.aiagents.data.model.VideoTutorial?>(null) }
 
     Scaffold(
         topBar = {
@@ -81,8 +127,10 @@ fun CourseDetailScreen(
             val context = LocalContext.current
             ExtendedFloatingActionButton(
                 onClick = {
+                    println("CourseDetailScreen: Start Chat clicked, courseId = $courseId")
                     val intent = android.content.Intent(context, com.playapp.aiagents.ui.playground.PlaygroundActivity::class.java)
                     intent.putExtra("agent_id", courseId)
+                    println("CourseDetailScreen: Starting PlaygroundActivity with agent_id = $courseId")
                     context.startActivity(intent)
                 },
                 icon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = "Open Playground") },
@@ -114,7 +162,7 @@ fun CourseDetailScreen(
                                 text = course.title,
                                 style = MaterialTheme.typography.headlineLarge,
                                 color = Color.White,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.Medium,
                                 textAlign = TextAlign.Center
                             )
                             Spacer(modifier = Modifier.height(8.dp))
@@ -146,7 +194,7 @@ fun CourseDetailScreen(
                             Text(
                                 text = "About This Course",
                                 style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Medium
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
@@ -165,7 +213,7 @@ fun CourseDetailScreen(
                             Text(
                                 text = "Course Topics",
                                 style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Medium
                             )
                             Spacer(modifier = Modifier.height(12.dp))
 
@@ -179,7 +227,7 @@ fun CourseDetailScreen(
                                     Text(
                                         text = "${index + 1}.",
                                         style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.Bold,
+                                        fontWeight = FontWeight.Medium,
                                         modifier = Modifier.width(24.dp)
                                     )
                                     Text(
@@ -200,13 +248,141 @@ fun CourseDetailScreen(
                             Text(
                                 text = "AI Model",
                                 style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Medium
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = course.model,
                                 style = MaterialTheme.typography.bodyLarge
                             )
+                        }
+                    }
+                }
+
+                // Video Tutorials
+                if (course.videoTutorials.isNotEmpty()) {
+                    item {
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "Video Tutorials",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                course.videoTutorials.sortedBy { it.order }.forEach { video ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        IconButton(
+                                            onClick = {
+                                                selectedVideo = video
+                                                showVideoPlayer = true
+                                                // Mark video as watched
+                                                progressRepository?.let { repo ->
+                                                    coroutineScope.launch {
+                                                        try {
+                                                            repo.markVideoWatched("user_123", courseId, video.id)
+                                                        } catch (e: Exception) {
+                                                            // Handle error silently
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        ) {
+                                            Icon(
+                                                Icons.Filled.PlayArrow,
+                                                contentDescription = "Play ${video.title}",
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = video.title,
+                                                style = MaterialTheme.typography.titleMedium
+                                            )
+                                            Text(
+                                                text = "${video.duration} • ${video.description}",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                    if (video != course.videoTutorials.last()) {
+                                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Code Examples
+                if (course.codeExamples.isNotEmpty()) {
+                    item {
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "Code Examples",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                course.codeExamples.forEach { codeExample ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.Code,
+                                            contentDescription = "Code",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = codeExample.title,
+                                                style = MaterialTheme.typography.titleMedium
+                                            )
+                                            Text(
+                                                text = "${codeExample.language} • ${codeExample.description}",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        IconButton(
+                                            onClick = {
+                                                // TODO: Download code example
+                                                progressRepository?.let { repo ->
+                                                    coroutineScope.launch {
+                                                        try {
+                                                            repo.markCodeDownloaded("user_123", courseId)
+                                                        } catch (e: Exception) {
+                                                            // Handle error silently
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        ) {
+                                            Icon(
+                                                Icons.Filled.Download,
+                                                contentDescription = "Download ${codeExample.title}"
+                                            )
+                                        }
+                                    }
+                                    if (codeExample != course.codeExamples.last()) {
+                                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -232,6 +408,17 @@ fun CourseDetailScreen(
                 }
             }
         }
+    }
+
+    // Video Player Dialog
+    if (showVideoPlayer && selectedVideo != null) {
+        VideoPlayerDialog(
+            video = selectedVideo!!,
+            onDismiss = {
+                showVideoPlayer = false
+                selectedVideo = null
+            }
+        )
     }
 }
 
