@@ -35,6 +35,8 @@ import com.playapp.aiagents.ui.settings.SettingsActivity
 import com.playapp.aiagents.ui.auth.SignupActivity
 import com.playapp.aiagents.ui.viewmodel.AgentViewModel
 import com.playapp.aiagents.data.repository.AgentRepository
+import com.playapp.aiagents.ui.viewmodel.CartViewModel
+import com.playapp.aiagents.data.repository.CartRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import kotlinx.coroutines.delay
@@ -53,12 +55,25 @@ class HomeActivity : ComponentActivity() {
         }
     }
 
+    private val cartViewModel: CartViewModel by viewModels {
+        object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                if (modelClass.isAssignableFrom(CartViewModel::class.java)) {
+                    @Suppress("UNCHECKED_CAST")
+                    return CartViewModel(application) as T
+                }
+                throw IllegalArgumentException("Unknown ViewModel class")
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
                 HomeScreen(
                     viewModel = viewModel,
+                    cartViewModel = cartViewModel,
                     onGetStarted = {
                         startActivity(Intent(this, MainActivity::class.java))
                         finish()
@@ -67,7 +82,10 @@ class HomeActivity : ComponentActivity() {
                         startActivity(Intent(this, SettingsActivity::class.java))
                     },
                     onSignUp = {
-                        startActivity(Intent(this, SignupActivity::class.java))
+                        startActivity(Intent(this, com.playapp.aiagents.ui.auth.SignupActivity::class.java))
+                    },
+                    onCartClick = {
+                        startActivity(Intent(this, com.playapp.aiagents.ui.cart.CartActivity::class.java))
                     }
                 )
             }
@@ -79,9 +97,11 @@ class HomeActivity : ComponentActivity() {
 @Composable
 fun HomeScreen(
     viewModel: AgentViewModel = viewModel(),
+    cartViewModel: CartViewModel = viewModel(),
     onGetStarted: () -> Unit = {},
     onSettings: () -> Unit = {},
-    onSignUp: () -> Unit = {}
+    onSignUp: () -> Unit = {},
+    onCartClick: () -> Unit = {}
 ) {
     val agents by viewModel.agents.collectAsState()
     val coroutineScope = rememberCoroutineScope()
@@ -119,6 +139,27 @@ fun HomeScreen(
                     }
                 },
                 actions = {
+                    val cartItemCount by cartViewModel.cart.collectAsState()
+                    val itemCount = cartItemCount?.items?.sumOf { it.quantity } ?: 0
+
+                    // Cart icon with badge
+                    IconButton(onClick = onCartClick) {
+                        BadgedBox(
+                            badge = {
+                                if (itemCount > 0) {
+                                    Badge(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = Color.White
+                                    ) {
+                                        Text(itemCount.toString())
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Filled.ShoppingCart, contentDescription = "Shopping Cart")
+                        }
+                    }
+
                     IconButton(onClick = onSignUp) {
                         Icon(Icons.Filled.PersonAdd, contentDescription = "Sign Up")
                     }
@@ -164,7 +205,7 @@ fun HomeScreen(
 
             // Price Plan Section
             item {
-                PricePlanSection()
+                PricePlanSection(cartViewModel = cartViewModel)
             }
 
             // Stats Section
@@ -636,7 +677,7 @@ fun CallToActionSection(onGetStarted: () -> Unit) {
 }
 
 @Composable
-fun PricePlanSection() {
+fun PricePlanSection(cartViewModel: CartViewModel) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -680,7 +721,9 @@ fun PricePlanSection() {
                     ),
                     buttonText = "Get Started",
                     isPopular = false,
-                    backgroundColor = MaterialTheme.colorScheme.surfaceVariant
+                    backgroundColor = MaterialTheme.colorScheme.surfaceVariant,
+                    cartViewModel = cartViewModel,
+                    planId = "free"
                 )
             }
 
@@ -699,7 +742,9 @@ fun PricePlanSection() {
                     ),
                     buttonText = "Start Pro Trial",
                     isPopular = true,
-                    backgroundColor = MaterialTheme.colorScheme.primaryContainer
+                    backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                    cartViewModel = cartViewModel,
+                    planId = "pro"
                 )
             }
 
@@ -719,7 +764,9 @@ fun PricePlanSection() {
                     ),
                     buttonText = "Contact Sales",
                     isPopular = false,
-                    backgroundColor = MaterialTheme.colorScheme.secondaryContainer
+                    backgroundColor = MaterialTheme.colorScheme.secondaryContainer,
+                    cartViewModel = cartViewModel,
+                    planId = "enterprise"
                 )
             }
         }
@@ -734,7 +781,9 @@ fun PricingCard(
     features: List<String>,
     buttonText: String,
     isPopular: Boolean,
-    backgroundColor: Color
+    backgroundColor: Color,
+    cartViewModel: CartViewModel,
+    planId: String
 ) {
     Card(
         modifier = Modifier
@@ -817,13 +866,20 @@ fun PricingCard(
             Spacer(modifier = Modifier.height(20.dp))
 
             Button(
-                onClick = { /* Handle pricing selection */ },
+                onClick = {
+                    val pricePlan = cartViewModel.getPricePlan(planId)
+                    if (pricePlan != null) {
+                        cartViewModel.addToCart(pricePlan)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isPopular) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
                 )
             ) {
-                Text(buttonText, fontWeight = FontWeight.Bold)
+                Icon(Icons.Filled.AddShoppingCart, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Add to Cart", fontWeight = FontWeight.Bold)
             }
         }
     }
