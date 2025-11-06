@@ -154,6 +154,11 @@ fun HomeScreen(
                 )
             }
 
+            // Price Plan Section
+            item {
+                PricePlanSection()
+            }
+
             // Stats Section
             item {
                 StatsSection()
@@ -436,72 +441,75 @@ fun AgentCard(
     agent: com.playapp.aiagents.data.model.Agent,
     onClick: () -> Unit
 ) {
+    val backgroundColor = when (agent.id % 5) {
+        0 -> Color(0xFF4CAF50) // Green
+        1 -> Color(0xFF2196F3) // Blue
+        2 -> Color(0xFFFF9800) // Orange
+        3 -> Color(0xFFE91E63) // Pink
+        4 -> Color(0xFF9C27B0) // Purple
+        else -> Color(0xFF607D8B) // Grey
+    }
+
     Card(
         modifier = Modifier
-            .width(280.dp)
+            .fillMaxWidth()
+            .height(200.dp)
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Agent avatar
-            Box(
-                modifier = Modifier
-                    .size(60.dp)
-                    .clip(CircleShape)
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.primary,
-                                MaterialTheme.colorScheme.secondary
-                            )
-                        )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
                 Text(
-                    text = agent.title.first().toString(),
-                    style = MaterialTheme.typography.headlineMedium,
+                    text = "Agent ${agent.id}",
+                    style = MaterialTheme.typography.titleMedium,
                     color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = agent.title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = agent.description.take(100) + if (agent.description.length > 100) "..." else "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.8f)
+                )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = agent.title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = agent.description.take(100) + if (agent.description.length > 100) "..." else "",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Filled.Star,
+                        contentDescription = "Rating",
+                        tint = Color.Yellow,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "4.${agent.id % 5 + 5}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White
+                    )
+                }
+
                 Text(
-                    text = "Try Now",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+                    text = agent.duration,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.8f)
                 )
             }
         }
@@ -614,6 +622,200 @@ fun CallToActionSection(onGetStarted: () -> Unit) {
                 Text("Start Exploring", fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.width(8.dp))
                 Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
+            }
+        }
+    }
+}
+
+@Composable
+fun PricePlanSection() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp)
+    ) {
+        Text(
+            text = "Choose Your Plan",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Select the perfect plan for your AI learning journey",
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        LazyColumn(
+            modifier = Modifier.height(400.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(bottom = 16.dp)
+        ) {
+            item {
+                PricingCard(
+                    title = "Free",
+                    price = "$0",
+                    period = "Forever",
+                    features = listOf(
+                        "Access to 3 AI Agents",
+                        "Basic Chat Functionality",
+                        "Community Support",
+                        "Local AI Processing"
+                    ),
+                    buttonText = "Get Started",
+                    isPopular = false,
+                    backgroundColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            }
+
+            item {
+                PricingCard(
+                    title = "Pro",
+                    price = "$9.99",
+                    period = "per month",
+                    features = listOf(
+                        "Access to All AI Agents",
+                        "Advanced Chat Features",
+                        "Priority Support",
+                        "Custom Model Training",
+                        "API Access",
+                        "Offline Mode"
+                    ),
+                    buttonText = "Start Pro Trial",
+                    isPopular = true,
+                    backgroundColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            }
+
+            item {
+                PricingCard(
+                    title = "Enterprise",
+                    price = "$29.99",
+                    period = "per month",
+                    features = listOf(
+                        "Everything in Pro",
+                        "Team Collaboration",
+                        "Advanced Analytics",
+                        "Custom Integrations",
+                        "Dedicated Support",
+                        "SLA Guarantee",
+                        "White-label Solution"
+                    ),
+                    buttonText = "Contact Sales",
+                    isPopular = false,
+                    backgroundColor = MaterialTheme.colorScheme.secondaryContainer
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun PricingCard(
+    title: String,
+    price: String,
+    period: String,
+    features: List<String>,
+    buttonText: String,
+    isPopular: Boolean,
+    backgroundColor: Color
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            if (isPopular) {
+                Box(
+                    modifier = Modifier
+                        .background(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .padding(horizontal = 12.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "Most Popular",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Text(
+                    text = price,
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = period,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            features.forEach { feature ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Filled.Check,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = feature,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Button(
+                onClick = { /* Handle pricing selection */ },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isPopular) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
+                )
+            ) {
+                Text(buttonText, fontWeight = FontWeight.Bold)
             }
         }
     }
