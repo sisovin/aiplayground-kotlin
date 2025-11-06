@@ -51,6 +51,9 @@ import com.playapp.aiagents.ui.courses.CoursesActivity
 import com.playapp.aiagents.ui.cart.CartActivity
 import com.playapp.aiagents.ui.notifications.NotificationsActivity
 import com.playapp.aiagents.ui.profile.ProfileActivity
+import com.playapp.aiagents.ui.settings.SettingsActivity
+import com.playapp.aiagents.ui.auth.SigninActivity
+import com.playapp.aiagents.ui.auth.SignupActivity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
@@ -184,6 +187,40 @@ class MainActivity : ComponentActivity() {
                         val intent = Intent(this@MainActivity, CourseDetailActivity::class.java)
                         intent.putExtra("course_id", courseId)
                         startActivity(intent)
+                    },
+                    onNavigateToHome = {
+                        val intent = Intent(this@MainActivity, HomeActivity::class.java)
+                        startActivity(intent)
+                    },
+                    onNavigateToCourses = {
+                        val intent = Intent(this@MainActivity, CoursesActivity::class.java)
+                        startActivity(intent)
+                    },
+                    onNavigateToCart = {
+                        val intent = Intent(this@MainActivity, CartActivity::class.java)
+                        startActivity(intent)
+                    },
+                    onNavigateToProfile = {
+                        val intent = Intent(this@MainActivity, ProfileActivity::class.java)
+                        startActivity(intent)
+                    },
+                    onNavigateToSettings = {
+                        val intent = Intent(this@MainActivity, SettingsActivity::class.java)
+                        startActivity(intent)
+                    },
+                    onSignIn = {
+                        val intent = Intent(this@MainActivity, SigninActivity::class.java)
+                        startActivity(intent)
+                    },
+                    onSignOut = {
+                        // TODO: Implement sign out functionality
+                        // This could include clearing user session, Firebase sign out, etc.
+                        // For now, just show a toast message
+                        android.widget.Toast.makeText(
+                            this@MainActivity,
+                            "Sign out functionality will be implemented",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
                     }
                 )
             }
@@ -383,6 +420,16 @@ fun DashboardScreen(
                         onNavigateToProfile()
                     },
                     leadingIcon = { Icon(Icons.Filled.Person, contentDescription = "Profile") }
+                )
+
+                DropdownMenuItem(
+                    text = { Text("Notifications") },
+                    onClick = {
+                        showMenu = false
+                        val intent = Intent(activityContext, NotificationsActivity::class.java)
+                        activityContext?.startActivity(intent)
+                    },
+                    leadingIcon = { Icon(Icons.Filled.Notifications, contentDescription = "Notifications") }
                 )
 
                 DropdownMenuItem(
