@@ -26,9 +26,7 @@ class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme {
-                SettingsScreen(onBackPressed = { finish() })
-            }
+            SettingsScreen(onBackPressed = { finish() })
         }
     }
 }
@@ -36,7 +34,6 @@ class SettingsActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    viewModel: AgentViewModel = viewModel(),
     onBackPressed: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -45,7 +42,7 @@ fun SettingsScreen(
     // Settings state
     var userName by remember { mutableStateOf(prefs.getString("user_name", "") ?: "") }
     var userEmail by remember { mutableStateOf(prefs.getString("user_email", "") ?: "") }
-    var ollamaServerUrl by remember { mutableStateOf(prefs.getString("ollama_server_url", "http://localhost:11434") ?: "http://localhost:11434") }
+    var ollamaServerUrl by remember { mutableStateOf(prefs.getString("ollama_server_url", "http://10.0.2.2:11434") ?: "http://10.0.2.2:11434") }
     var ollamaNetworkExposure by remember { mutableStateOf(prefs.getBoolean("ollama_network_exposure", false)) }
     var modelLocation by remember { mutableStateOf(prefs.getString("model_location", "local") ?: "local") }
     var contextLength by remember { mutableStateOf(prefs.getInt("context_length", 4096)) }
@@ -171,7 +168,7 @@ fun SettingsScreen(
                         placeholder = { Text("http://localhost:11434") }
                     )
 
-                    Divider()
+                    HorizontalDivider()
 
                     // Network Exposure Toggle
                     Row(
@@ -200,7 +197,7 @@ fun SettingsScreen(
                         )
                     }
 
-                    Divider()
+                    HorizontalDivider()
 
                     // Model Location
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -232,7 +229,7 @@ fun SettingsScreen(
                         }
                     }
 
-                    Divider()
+                    HorizontalDivider()
 
                     // Context Length
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -320,7 +317,7 @@ fun SettingsScreen(
                         )
                     }
 
-                    Divider()
+                    HorizontalDivider()
 
                     // Reset Settings
                     Button(

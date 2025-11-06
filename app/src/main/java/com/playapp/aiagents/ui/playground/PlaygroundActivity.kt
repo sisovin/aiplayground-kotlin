@@ -1,6 +1,7 @@
 package com.playapp.aiagents.ui.playground
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -55,6 +56,7 @@ import androidx.compose.ui.window.Dialog
 import kotlinx.coroutines.launch
 import androidx.lifecycle.lifecycleScope
 import com.playapp.aiagents.ui.video.VideoPlayerDialog
+import com.playapp.aiagents.ui.settings.SettingsActivity
 
 class PlaygroundActivity : ComponentActivity() {
     private val viewModel: AgentViewModel by viewModels {
@@ -88,7 +90,8 @@ class PlaygroundActivity : ComponentActivity() {
 
         // Get Ollama server URL from preferences
         val prefs = getSharedPreferences("aiagents_settings", Context.MODE_PRIVATE)
-        val ollamaServerUrl = prefs.getString("ollama_server_url", "http://localhost:11434") ?: "http://localhost:11434"
+        val ollamaServerUrl = prefs.getString("ollama_server_url", "http://10.0.2.2:11434") ?: "http://10.0.2.2:11434"
+        println("PlaygroundActivity: Using Ollama server URL: $ollamaServerUrl")
         ollamaApiService = OllamaApiService(baseUrl = ollamaServerUrl)
 
         // Track agent usage
@@ -166,6 +169,9 @@ fun PlaygroundScreen(
     var messageText by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
+
+    // Error state
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     // Video player state
     var showVideoPlayer by remember { mutableStateOf(false) }
@@ -255,6 +261,7 @@ fun PlaygroundScreen(
 
             } catch (e: Exception) {
                 println("Error sending message: ${e.message}")
+                errorMessage = "Failed to connect to Ollama server. Please check your server URL in Settings. Error: ${e.message}"
                 isLoading = false
                 // Handle error - could show error message in UI
             }
@@ -264,42 +271,7 @@ fun PlaygroundScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = agent?.title ?: "AI Playground",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        Spacer(modifier = Modifier.width(16.dp))
-
-                        // Progress tracking
-                        if (!isCompleted) {
-                            Text(
-                                text = "${progressPercentage}% complete",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        } else {
-                            Button(
-                                onClick = {
-                                    // Mark as complete logic
-                                    isCompleted = true
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary
-                                )
-                            ) {
-                                Text("Mark as Complete", style = MaterialTheme.typography.labelSmall)
-                            }
-                        }
-                    }
-                },
+                title = {},
                 navigationIcon = {
                     IconButton(onClick = onBackPressed) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -321,6 +293,14 @@ fun PlaygroundScreen(
                         Icon(Icons.Filled.Lightbulb, contentDescription = "Sample Prompts")
                     }
 
+                    // Settings
+                    IconButton(onClick = {
+                        val intent = Intent(activityContext, SettingsActivity::class.java)
+                        activityContext?.startActivity(intent)
+                    }) {
+                        Icon(Icons.Filled.Settings, contentDescription = "Settings")
+                    }
+
                     // Video Tutorials
                     IconButton(onClick = { showVideoTutorials = true }) {
                         Icon(Icons.Filled.PlayArrow, contentDescription = "Video Tutorials")
@@ -330,6 +310,49 @@ fun PlaygroundScreen(
         }
     ) { paddingValues ->
         Column(modifier = Modifier.padding(paddingValues)) {
+            // Agent Title Row
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    text = agent?.title ?: "AI Playground",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            // Progress Tracking Row
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+            ) {
+                if (!isCompleted) {
+                    Text(
+                        text = "${progressPercentage}% complete",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    Button(
+                        onClick = {
+                            // Mark as complete logic
+                            isCompleted = true
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text("Mark as Complete", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+
             // Tab Row
             TabRow(
                 selectedTabIndex = pagerState.currentPage,
@@ -435,6 +458,20 @@ fun PlaygroundScreen(
             onDismiss = {
                 showVideoPlayer = false
                 selectedVideo = null
+            }
+        )
+    }
+
+    // Error dialog
+    if (errorMessage != null) {
+        AlertDialog(
+            onDismissRequest = { errorMessage = null },
+            title = { Text("Connection Error") },
+            text = { Text(errorMessage!!) },
+            confirmButton = {
+                TextButton(onClick = { errorMessage = null }) {
+                    Text("OK")
+                }
             }
         )
     }
