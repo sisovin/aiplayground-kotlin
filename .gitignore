@@ -112,6 +112,10 @@ lint/tmp/
 # Firebase
 app/google-services.json
 google-services.json
+app/google-services.json_backup
+google-services.json_backup
+app/google-client-secret.json
+google-client-secret.json
 app/*-default-rtdb-export.json
 *-default-rtdb-export.json
 app/src/main/assets/*-firebase-adminsdk-*.json
@@ -130,3 +134,11 @@ local.properties
 
 # Crashlytics
 crashlytics-build.properties
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.test
+.env.production
+.env.staging

@@ -87,13 +87,20 @@ class SignupActivity : ComponentActivity() {
         super.onActivityResult(requestCode, resultCode, data)
 
         if (requestCode == RC_GOOGLE_SIGN_IN) {
+            println("SignupActivity: onActivityResult for Google Sign-Up")
             val task = GoogleSignIn.getSignedInAccountFromIntent(data)
             try {
                 val account = task.getResult(ApiException::class.java)
+                println("SignupActivity: Google account: ${account?.email}")
                 account?.idToken?.let { idToken ->
+                    println("SignupActivity: Got idToken, calling signInWithGoogle")
                     viewModel.signInWithGoogle(idToken)
+                } ?: run {
+                    println("SignupActivity: idToken is null")
+                    Toast.makeText(this, "Failed to get ID token", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: ApiException) {
+                println("SignupActivity: Google sign up failed: ${e.message}")
                 Toast.makeText(this, "Google sign up failed: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
@@ -418,6 +425,39 @@ fun SignupScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             "Continue with Google",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Email link sign up
+                OutlinedButton(
+                    onClick = {
+                        if (email.isBlank()) {
+                            Toast.makeText(context, "Please enter your email address", Toast.LENGTH_SHORT).show()
+                            return@OutlinedButton
+                        }
+                        viewModel.sendSignInLinkToEmail(email)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    enabled = !isLoading && email.isNotBlank()
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            Icons.Filled.Email,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            "Send Sign-up Link",
                             style = MaterialTheme.typography.titleMedium
                         )
                     }

@@ -41,6 +41,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
 
 class HomeActivity : ComponentActivity() {
     private val viewModel: AgentViewModel by viewModels {
@@ -96,14 +97,15 @@ class HomeActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    viewModel: AgentViewModel = viewModel(),
-    cartViewModel: CartViewModel = viewModel(),
+    viewModel: AgentViewModel? = null,
+    cartViewModel: CartViewModel? = null,
     onGetStarted: () -> Unit = {},
     onSettings: () -> Unit = {},
     onSignUp: () -> Unit = {},
-    onCartClick: () -> Unit = {}
+    onCartClick: () -> Unit = {},
+    previewAgents: List<com.playapp.aiagents.data.model.Agent> = emptyList()
 ) {
-    val agents by viewModel.agents.collectAsState()
+    val agents by viewModel?.agents?.collectAsState() ?: remember { mutableStateOf(previewAgents) }
     val coroutineScope = rememberCoroutineScope()
 
     // Animation states
@@ -139,7 +141,7 @@ fun HomeScreen(
                     }
                 },
                 actions = {
-                    val cartItemCount by cartViewModel.cart.collectAsState()
+                    val cartItemCount by cartViewModel?.cart?.collectAsState() ?: remember { mutableStateOf(null) }
                     val itemCount = cartItemCount?.items?.sumOf { it.quantity } ?: 0
 
                     // Cart icon with badge
@@ -677,7 +679,7 @@ fun CallToActionSection(onGetStarted: () -> Unit) {
 }
 
 @Composable
-fun PricePlanSection(cartViewModel: CartViewModel) {
+fun PricePlanSection(cartViewModel: CartViewModel?) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -782,7 +784,7 @@ fun PricingCard(
     buttonText: String,
     isPopular: Boolean,
     backgroundColor: Color,
-    cartViewModel: CartViewModel,
+    cartViewModel: CartViewModel?,
     planId: String
 ) {
     Card(
@@ -867,7 +869,7 @@ fun PricingCard(
 
             Button(
                 onClick = {
-                    val pricePlan = cartViewModel.getPricePlan(planId)
+                    val pricePlan = cartViewModel!!.getPricePlan(planId)
                     if (pricePlan != null) {
                         cartViewModel.addToCart(pricePlan)
                     }
@@ -905,6 +907,70 @@ fun FooterSection() {
             text = "Powered by Ollama • Local AI • Privacy First",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun HomeScreenPreview() {
+    val sampleAgents = listOf(
+        com.playapp.aiagents.data.model.Agent(
+            id = 1,
+            title = "Conversational AI Assistant",
+            provider = "Ollama",
+            instructor = "AI Team",
+            duration = "5 min",
+            description = "A helpful AI assistant for general conversations and queries.",
+            color = "#2196F3",
+            topics = listOf("Chat", "General"),
+            ollamaPrompt = "You are a helpful assistant.",
+            model = "llama2",
+            modelType = com.playapp.aiagents.data.model.OllamaModel.LLAMA2,
+            samplePrompts = listOf("Hello!", "How are you?"),
+            setupInstructions = "Just start chatting.",
+            supportsStreaming = true
+        ),
+        com.playapp.aiagents.data.model.Agent(
+            id = 2,
+            title = "Code Generator",
+            provider = "Ollama",
+            instructor = "Dev Team",
+            duration = "10 min",
+            description = "Generate code snippets and explain programming concepts.",
+            color = "#4CAF50",
+            topics = listOf("Coding", "Programming"),
+            ollamaPrompt = "You are a code expert.",
+            model = "codellama",
+            modelType = com.playapp.aiagents.data.model.OllamaModel.CODELLAMA,
+            samplePrompts = listOf("Write a function to sort an array.", "Explain recursion."),
+            setupInstructions = "Provide code examples.",
+            supportsStreaming = true
+        ),
+        com.playapp.aiagents.data.model.Agent(
+            id = 3,
+            title = "Creative Writer",
+            provider = "Ollama",
+            instructor = "Creative Team",
+            duration = "15 min",
+            description = "Assist with creative writing and storytelling.",
+            color = "#FF9800",
+            topics = listOf("Writing", "Creativity"),
+            ollamaPrompt = "You are a creative writer.",
+            model = "mistral",
+            modelType = com.playapp.aiagents.data.model.OllamaModel.MISTRAL,
+            samplePrompts = listOf("Write a short story.", "Brainstorm plot ideas."),
+            setupInstructions = "Focus on narrative.",
+            supportsStreaming = true
+        )
+    )
+    MaterialTheme {
+        HomeScreen(
+            onGetStarted = {},
+            onSettings = {},
+            onSignUp = {},
+            onCartClick = {},
+            previewAgents = sampleAgents
         )
     }
 }

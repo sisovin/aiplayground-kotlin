@@ -78,6 +78,7 @@ class PlaygroundActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        println("PlaygroundActivity: onCreate called")
         val agentId = intent.getIntExtra("agent_id", -1)
 
         // Debug logging
@@ -118,6 +119,11 @@ class PlaygroundActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onBackPressed() {
+        super.onBackPressed()
+        finish()
     }
 
     override fun onDestroy() {
@@ -168,6 +174,7 @@ fun PlaygroundScreen(
     var currentSession by remember { mutableStateOf<ChatSession?>(null) }
     var messageText by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
+    var streamingMessage by remember { mutableStateOf<ChatMessage?>(null) }
     val listState = rememberLazyListState()
 
     // Error state
@@ -215,19 +222,19 @@ fun PlaygroundScreen(
 
         coroutineScope.launch {
             try {
-                var aiMessageId = ""
 
                 if (isStreaming) {
+                    var accumulatedResponse = ""
+                    val aiMessageId = "ai_${sessionId}_${System.currentTimeMillis()}"
+                    
                     ollamaApiService!!.sendChatMessageStreaming(message, model, systemPrompt).collect { (partialResponse, metrics) ->
-                        if (aiMessageId.isEmpty()) {
-                            aiMessageId = "ai_${sessionId}_${System.currentTimeMillis()}"
-                        }
-
+                        accumulatedResponse += partialResponse
+                        
                         if (metrics != null) {
                             // Final response with metrics
                             val aiMessage = ChatMessage(
                                 id = aiMessageId,
-                                content = partialResponse,
+                                content = accumulatedResponse,
                                 isUser = false,
                                 timestamp = System.currentTimeMillis(),
                                 model = model.displayName
@@ -236,9 +243,17 @@ fun PlaygroundScreen(
                             val finalMessages = currentSession?.messages?.toMutableList() ?: mutableListOf()
                             finalMessages.add(aiMessage)
                             currentSession = currentSession?.copy(messages = finalMessages)
+                            streamingMessage = null
                             isLoading = false
                         } else {
-                            // Intermediate streaming update - could update UI here
+                            // Intermediate streaming update - update UI
+                            streamingMessage = ChatMessage(
+                                id = aiMessageId,
+                                content = accumulatedResponse,
+                                isUser = false,
+                                timestamp = System.currentTimeMillis(),
+                                model = model.displayName
+                            )
                         }
                     }
                 } else {
@@ -253,9 +268,9 @@ fun PlaygroundScreen(
                         model = model.displayName
                     )
                     chatRepository!!.addMessageWithMetrics(sessionId, aiMessage, metrics)
-                    val updatedMessages = currentSession?.messages?.toMutableList() ?: mutableListOf()
-                    updatedMessages.add(aiMessage)
-                    currentSession = currentSession?.copy(messages = updatedMessages)
+                    val nonStreamingMessages = currentSession?.messages?.toMutableList() ?: mutableListOf()
+                    nonStreamingMessages.add(aiMessage)
+                    currentSession = currentSession?.copy(messages = nonStreamingMessages)
                     isLoading = false
                 }
 
@@ -386,6 +401,7 @@ fun PlaygroundScreen(
                     2 -> ChatTab(
                         agent = agent,
                         currentSession = currentSession,
+                        streamingMessage = streamingMessage,
                         messageText = messageText,
                         onMessageTextChange = { messageText = it },
                         isLoading = isLoading,
@@ -673,6 +689,7 @@ fun CodeTab(agent: Agent?) {
 fun ChatTab(
     agent: Agent?,
     currentSession: ChatSession?,
+    streamingMessage: ChatMessage?,
     messageText: String,
     onMessageTextChange: (String) -> Unit,
     isLoading: Boolean,
@@ -728,6 +745,13 @@ fun ChatTab(
         ) {
             currentSession?.messages?.let { messages ->
                 items(messages) { message ->
+                    ChatMessageBubble(message)
+                }
+            }
+
+            // Display streaming message if available
+            streamingMessage?.let { message ->
+                item {
                     ChatMessageBubble(message)
                 }
             }

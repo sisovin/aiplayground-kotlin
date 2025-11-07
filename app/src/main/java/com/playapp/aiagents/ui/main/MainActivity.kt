@@ -2,45 +2,38 @@ package com.playapp.aiagents.ui.main
 
 import android.os.Bundle
 import android.content.Intent
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.*
+import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.foundation.pager.*
+import androidx.compose.foundation.shape.*
+import androidx.compose.animation.*
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import android.graphics.Color as AndroidColor
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.material.icons.Icons
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.ui.draw.scale
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.background
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.lifecycleScope
 import com.playapp.aiagents.R
 import com.playapp.aiagents.data.model.Agent
 import com.playapp.aiagents.data.repository.AgentRepository
@@ -55,17 +48,9 @@ import com.playapp.aiagents.ui.settings.SettingsActivity
 import com.playapp.aiagents.ui.auth.SigninActivity
 import com.playapp.aiagents.ui.auth.SignupActivity
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.unit.dp
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Login
-import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.automirrored.filled.MenuBook
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import com.playapp.aiagents.data.service.FirebaseAuthService
 
 data class NavItem(val label: String, val icon: ImageVector)
 
@@ -178,6 +163,23 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Handle email link authentication
+        handleEmailLinkSignIn()
+
+        // Check authentication status
+        val authService = FirebaseAuthService()
+        val isAuthenticated = runBlocking {
+            authService.isUserLoggedIn
+        }
+
+        if (!isAuthenticated) {
+            // Redirect to sign-in if not authenticated
+            startActivity(Intent(this, SigninActivity::class.java))
+            finish()
+            return
+        }
+
         setContent {
             MaterialTheme {
                 DashboardScreen(
@@ -213,18 +215,85 @@ class MainActivity : ComponentActivity() {
                         startActivity(intent)
                     },
                     onSignOut = {
-                        // TODO: Implement sign out functionality
-                        // This could include clearing user session, Firebase sign out, etc.
-                        // For now, just show a toast message
-                        android.widget.Toast.makeText(
-                            this@MainActivity,
-                            "Sign out functionality will be implemented",
-                            android.widget.Toast.LENGTH_SHORT
-                        ).show()
+                        // Implement Firebase sign out
+                        val authService = FirebaseAuthService()
+                        lifecycleScope.launch {
+                            try {
+                                authService.signOut()
+                                // Redirect to sign-in activity
+                                startActivity(Intent(this@MainActivity, SigninActivity::class.java))
+                                finish()
+                            } catch (e: Exception) {
+                                android.widget.Toast.makeText(
+                                    this@MainActivity,
+                                    "Failed to sign out: ${e.message}",
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
                     }
                 )
             }
         }
+    }
+
+    private fun handleEmailLinkSignIn() {
+        val authService = FirebaseAuthService()
+
+        // Check if the intent contains an email link
+        val emailLink = intent.data?.toString()
+        if (emailLink != null && authService.isSignInWithEmailLink(emailLink)) {
+            // Show a dialog to get the user's email
+            showEmailInputDialog { email ->
+                lifecycleScope.launch {
+                    try {
+                        val result = authService.signInWithEmailLink(email, emailLink)
+                        result.fold(
+                            onSuccess = {
+                                // Successfully signed in, continue with normal flow
+                                Toast.makeText(this@MainActivity, "Successfully signed in!", Toast.LENGTH_SHORT).show()
+                            },
+                            onFailure = { exception ->
+                                Toast.makeText(this@MainActivity, "Sign in failed: ${exception.message}", Toast.LENGTH_SHORT).show()
+                                // Redirect to sign-in activity
+                                startActivity(Intent(this@MainActivity, SigninActivity::class.java))
+                                finish()
+                            }
+                        )
+                    } catch (e: Exception) {
+                        Toast.makeText(this@MainActivity, "Sign in failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                        startActivity(Intent(this@MainActivity, SigninActivity::class.java))
+                        finish()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showEmailInputDialog(onEmailEntered: (String) -> Unit) {
+        val editText = android.widget.EditText(this)
+        editText.hint = "Enter your email"
+
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Complete Sign In")
+            .setMessage("Please enter your email address to complete the sign in process.")
+            .setView(editText)
+            .setPositiveButton("Sign In") { _, _ ->
+                val email = editText.text.toString().trim()
+                if (email.isNotEmpty()) {
+                    onEmailEntered(email)
+                } else {
+                    Toast.makeText(this, "Please enter a valid email", Toast.LENGTH_SHORT).show()
+                    startActivity(Intent(this, SigninActivity::class.java))
+                    finish()
+                }
+            }
+            .setNegativeButton("Cancel") { _, _ ->
+                startActivity(Intent(this, SigninActivity::class.java))
+                finish()
+            }
+            .setCancelable(false)
+            .show()
     }
 }
 
@@ -246,6 +315,19 @@ fun DashboardScreen(
     var selectedItem by remember { mutableStateOf(0) }
     var showMenu by remember { mutableStateOf(false) }
 
+    // Authentication state
+    val authService = remember { FirebaseAuthService() }
+    var currentUser by remember { mutableStateOf<com.google.firebase.auth.FirebaseUser?>(null) }
+    var isUserLoggedIn by remember { mutableStateOf(false) }
+
+    // Load auth state
+    LaunchedEffect(Unit) {
+        authService.getAuthStateFlow().collect { user ->
+            currentUser = user
+            isUserLoggedIn = user != null
+        }
+    }
+
     val navItems = listOf(
         NavItem("Home", Icons.Filled.Home),
         NavItem("Courses", Icons.AutoMirrored.Filled.MenuBook),
@@ -255,293 +337,370 @@ fun DashboardScreen(
         NavItem("Menu", Icons.Filled.Menu)
     )
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Top Bar with Bell Icon
-        TopAppBar(
-            title = { Text("AI Agents", fontWeight = FontWeight.Bold) },
-            actions = {
-                IconButton(onClick = { /* Handle notifications */ }) {
-                    Icon(Icons.Filled.Notifications, contentDescription = "Notifications")
+    Scaffold(
+        bottomBar = {
+            // Bottom Navigation (Icon only, no labels)
+            Box {
+                NavigationBar {
+                    navItems.forEachIndexed { index, item ->
+                        NavigationBarItem(
+                            icon = {
+                                Icon(item.icon, contentDescription = item.label)
+                            },
+                            label = null, // Remove text labels
+                            selected = selectedItem == index,
+                            onClick = {
+                                selectedItem = index
+                                when (index) {
+                                    0 -> { // Home
+                                        val intent = Intent(activityContext, HomeActivity::class.java)
+                                        activityContext?.startActivity(intent)
+                                    }
+                                    1 -> { // Courses
+                                        val intent = Intent(activityContext, CoursesActivity::class.java)
+                                        activityContext?.startActivity(intent)
+                                    }
+                                    2 -> { // Cart
+                                        val intent = Intent(activityContext, CartActivity::class.java)
+                                        activityContext?.startActivity(intent)
+                                    }
+                                    3 -> { // Notifications
+                                        val intent = Intent(activityContext, NotificationsActivity::class.java)
+                                        activityContext?.startActivity(intent)
+                                    }
+                                    4 -> { // Profile
+                                        val intent = Intent(activityContext, ProfileActivity::class.java)
+                                        activityContext?.startActivity(intent)
+                                    }
+                                    5 -> showMenu = true // Menu tab shows dropdown
+                                }
+                            }
+                        )
+                    }
+                }
+
+                // Dropdown Menu for Menu button
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Home") },
+                        onClick = {
+                            showMenu = false
+                            onNavigateToHome()
+                        },
+                        leadingIcon = { Icon(Icons.Filled.Home, contentDescription = "Home") }
+                    )
+
+                    DropdownMenuItem(
+                        text = { Text("Courses") },
+                        onClick = {
+                            showMenu = false
+                            onNavigateToCourses()
+                        },
+                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = "Courses") }
+                    )
+
+                    DropdownMenuItem(
+                        text = { Text("Cart") },
+                        onClick = {
+                            showMenu = false
+                            onNavigateToCart()
+                        },
+                        leadingIcon = { Icon(Icons.Filled.ShoppingCart, contentDescription = "Cart") }
+                    )
+
+                    DropdownMenuItem(
+                        text = { Text("Profile") },
+                        onClick = {
+                            showMenu = false
+                            onNavigateToProfile()
+                        },
+                        leadingIcon = { Icon(Icons.Filled.Person, contentDescription = "Profile") }
+                    )
+
+                    DropdownMenuItem(
+                        text = { Text("Notifications") },
+                        onClick = {
+                            showMenu = false
+                            val intent = Intent(activityContext, NotificationsActivity::class.java)
+                            activityContext?.startActivity(intent)
+                        },
+                        leadingIcon = { Icon(Icons.Filled.Notifications, contentDescription = "Notifications") }
+                    )
+
+                    DropdownMenuItem(
+                        text = { Text("Settings") },
+                        onClick = {
+                            showMenu = false
+                            onNavigateToSettings()
+                        },
+                        leadingIcon = { Icon(Icons.Filled.Settings, contentDescription = "Settings") }
+                    )
+
+                    HorizontalDivider()
+
+                    DropdownMenuItem(
+                        text = { Text("Sign In") },
+                        onClick = {
+                            showMenu = false
+                            onSignIn()
+                        },
+                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.Login, contentDescription = "Sign In") }
+                    )
+
+                    DropdownMenuItem(
+                        text = { Text("Sign Out") },
+                        onClick = {
+                            showMenu = false
+                            onSignOut()
+                        },
+                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Sign Out") }
+                    )
                 }
             }
-        )
-
-        // Top Section
-        Card(
+        }
+    ) { paddingValues ->
+        LazyColumn(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
+                .fillMaxSize()
+                .padding(paddingValues),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            HorizontalPager(
-                state = rememberPagerState(pageCount = { 5 }),
-                modifier = Modifier.height(200.dp)
-            ) { page ->
-                val backgroundColor = when (page) {
-                    0 -> colorResource(R.color.agent_1)
-                    1 -> colorResource(R.color.agent_2)
-                    2 -> colorResource(R.color.agent_3)
-                    3 -> colorResource(R.color.agent_4)
-                    4 -> colorResource(R.color.agent_5)
-                    else -> colorResource(R.color.primary)
-                }
+            // User Profile Header
+            item {
                 Card(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = backgroundColor)
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
                 ) {
-                    Column(
+                    Row(
                         modifier = Modifier
-                            .fillMaxSize()
+                            .fillMaxWidth()
                             .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = "Learn How to Build AI Agent",
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Start With These 9 Free Courses",
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Row(
-                            modifier = Modifier.padding(top = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Chip("9 Agent Types")
-                            Chip("Ollama Powered")
-                            Chip("Interactive Learning")
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            // User Avatar
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .background(
+                                        brush = Brush.linearGradient(
+                                            colors = listOf(
+                                                MaterialTheme.colorScheme.primary,
+                                                MaterialTheme.colorScheme.secondary
+                                            )
+                                        ),
+                                        shape = CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = currentUser?.displayName?.firstOrNull()?.toString() ?: currentUser?.email?.firstOrNull()?.toString()?.uppercase() ?: "U",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Column {
+                                Text(
+                                    text = currentUser?.displayName ?: "AI Explorer",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = currentUser?.email ?: "user@example.com",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                )
+                            }
+                        }
+
+                        // Sign Out Button
+                        IconButton(onClick = onSignOut) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.Logout,
+                                contentDescription = "Sign Out",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 }
             }
-        }
 
-        // Course Slider
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
+            // Stats Overview
+            item {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    item {
+                        StatsCard(
+                            title = "Courses Enrolled",
+                            value = agents.size.toString(),
+                            icon = Icons.AutoMirrored.Filled.MenuBook,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    item {
+                        StatsCard(
+                            title = "Hours Learned",
+                            value = "24", // Mock data
+                            icon = Icons.Filled.Schedule,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                    item {
+                        StatsCard(
+                            title = "Completed Courses",
+                            value = "3", // Mock data
+                            icon = Icons.Filled.CheckCircle,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
+                    item {
+                        StatsCard(
+                            title = "Achievements",
+                            value = "7", // Mock data
+                            icon = Icons.Filled.Star,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            }
+
+            // Continue Learning Section
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Continue Learning",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+
+                        // Mock continue learning items
+                        ContinueLearningItem(
+                            courseTitle = "Introduction to Machine Learning",
+                            progress = 0.65f,
+                            lastAccessed = "2 hours ago"
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        ContinueLearningItem(
+                            courseTitle = "Deep Learning Fundamentals",
+                            progress = 0.30f,
+                            lastAccessed = "1 day ago"
+                        )
+                    }
+                }
+            }
+
+            // Top Bar with Bell Icon
+            item {
+                TopAppBar(
+                    title = { Text("AI Agents", fontWeight = FontWeight.Bold) },
+                    actions = {
+                        IconButton(onClick = { /* Handle notifications */ }) {
+                            Icon(Icons.Filled.Notifications, contentDescription = "Notifications")
+                        }
+                    }
+                )
+            }
+
+            // Top Section
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
+                ) {
+                    HorizontalPager(
+                        state = rememberPagerState(pageCount = { 5 }),
+                        modifier = Modifier.height(200.dp)
+                    ) { page ->
+                        val backgroundColor = when (page) {
+                            0 -> colorResource(R.color.agent_1)
+                            1 -> colorResource(R.color.agent_2)
+                            2 -> colorResource(R.color.agent_3)
+                            3 -> colorResource(R.color.agent_4)
+                            4 -> colorResource(R.color.agent_5)
+                            else -> colorResource(R.color.primary)
+                        }
+                        Card(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = backgroundColor)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = "Learn How to Build AI Agent",
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Start With These 9 Free Courses",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = Color.White
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Row(
+                                    modifier = Modifier.padding(top = 8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    Chip("9 Agent Types")
+                                    Chip("Ollama Powered")
+                                    Chip("Interactive Learning")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Course Grid Access - Full course browsing
             itemsIndexed(agents.take(kotlin.math.min(9, agents.size))) { index, agent ->
                 AnimatedVisibility(
                     visible = true,
                     enter = fadeIn()
                 ) {
-                CourseDetailScreen(agent, index + 1) {
-                    onNavigateToCourseDetail(agent.id)
-                }
+                    CourseDetailScreen(agent, index + 1) {
+                        onNavigateToCourseDetail(agent.id)
+                    }
                 }
             }
         }
-
-        // Bottom Navigation (Icon only, no labels)
-        Box {
-            NavigationBar {
-                navItems.forEachIndexed { index, item ->
-                    NavigationBarItem(
-                        icon = {
-                            Icon(item.icon, contentDescription = item.label)
-                        },
-                        label = null, // Remove text labels
-                        selected = selectedItem == index,
-                        onClick = {
-                            selectedItem = index
-                            when (index) {
-                                0 -> { // Home
-                                    val intent = Intent(activityContext, HomeActivity::class.java)
-                                    activityContext?.startActivity(intent)
-                                }
-                                1 -> { // Courses
-                                    val intent = Intent(activityContext, CoursesActivity::class.java)
-                                    activityContext?.startActivity(intent)
-                                }
-                                2 -> { // Cart
-                                    val intent = Intent(activityContext, CartActivity::class.java)
-                                    activityContext?.startActivity(intent)
-                                }
-                                3 -> { // Notifications
-                                    val intent = Intent(activityContext, NotificationsActivity::class.java)
-                                    activityContext?.startActivity(intent)
-                                }
-                                4 -> { // Profile
-                                    val intent = Intent(activityContext, ProfileActivity::class.java)
-                                    activityContext?.startActivity(intent)
-                                }
-                                5 -> showMenu = true // Menu tab shows dropdown
-                            }
-                        }
-                    )
-                }
-            }
-
-            // Dropdown Menu for Menu button
-            DropdownMenu(
-                expanded = showMenu,
-                onDismissRequest = { showMenu = false }
-            ) {
-                DropdownMenuItem(
-                    text = { Text("Home") },
-                    onClick = {
-                        showMenu = false
-                        onNavigateToHome()
-                    },
-                    leadingIcon = { Icon(Icons.Filled.Home, contentDescription = "Home") }
-                )
-
-                DropdownMenuItem(
-                    text = { Text("Courses") },
-                    onClick = {
-                        showMenu = false
-                        onNavigateToCourses()
-                    },
-                    leadingIcon = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = "Courses") }
-                )
-
-                DropdownMenuItem(
-                    text = { Text("Cart") },
-                    onClick = {
-                        showMenu = false
-                        onNavigateToCart()
-                    },
-                    leadingIcon = { Icon(Icons.Filled.ShoppingCart, contentDescription = "Cart") }
-                )
-
-                DropdownMenuItem(
-                    text = { Text("Profile") },
-                    onClick = {
-                        showMenu = false
-                        onNavigateToProfile()
-                    },
-                    leadingIcon = { Icon(Icons.Filled.Person, contentDescription = "Profile") }
-                )
-
-                DropdownMenuItem(
-                    text = { Text("Notifications") },
-                    onClick = {
-                        showMenu = false
-                        val intent = Intent(activityContext, NotificationsActivity::class.java)
-                        activityContext?.startActivity(intent)
-                    },
-                    leadingIcon = { Icon(Icons.Filled.Notifications, contentDescription = "Notifications") }
-                )
-
-                DropdownMenuItem(
-                    text = { Text("Settings") },
-                    onClick = {
-                        showMenu = false
-                        onNavigateToSettings()
-                    },
-                    leadingIcon = { Icon(Icons.Filled.Settings, contentDescription = "Settings") }
-                )
-
-                Divider()
-
-                DropdownMenuItem(
-                    text = { Text("Sign In") },
-                    onClick = {
-                        showMenu = false
-                        onSignIn()
-                    },
-                    leadingIcon = { Icon(Icons.Filled.Login, contentDescription = "Sign In") }
-                )
-
-                DropdownMenuItem(
-                    text = { Text("Sign Out") },
-                    onClick = {
-                        showMenu = false
-                        onSignOut()
-                    },
-                    leadingIcon = { Icon(Icons.Filled.Logout, contentDescription = "Sign Out") }
-                )
-            }
-        }
-@Composable
-fun CourseDetailScreen(agent: Agent, index: Int, onClick: () -> Unit = {}) {
-     Box(
-         modifier = Modifier
-             .fillMaxWidth()
-             .wrapContentHeight()
-             .padding(horizontal = 16.dp, vertical = 5.dp)
-     ) {
-         Column(
-             modifier = Modifier.fillMaxSize(),
-             verticalArrangement = Arrangement.Center,
-             horizontalAlignment = Alignment.CenterHorizontally
-         ) {
-             Box {
-                 Card(
-                     modifier = Modifier.fillMaxWidth(),
-                     colors = CardDefaults.cardColors(containerColor = Color(AndroidColor.parseColor(agent.color))),
-                     onClick = onClick
-                 ) {
-                     Column(
-                         modifier = Modifier.padding(16.dp),
-                         horizontalAlignment = Alignment.CenterHorizontally
-                     ) {
-                         Text(
-                             text = agent.title,
-                             style = MaterialTheme.typography.headlineMedium,
-                             color = Color.White,
-                             fontWeight = FontWeight.Bold,
-                             textAlign = TextAlign.Center
-                         )
-                         Spacer(modifier = Modifier.height(8.dp))
-                         Text(
-                             text = "By ${agent.instructor}",
-                             style = MaterialTheme.typography.bodyLarge,
-                             color = Color.White.copy(alpha = 0.8f)
-                         )
-                         Spacer(modifier = Modifier.height(8.dp))
-                         Text(
-                             text = agent.provider,
-                             style = MaterialTheme.typography.bodyMedium,
-                             color = Color.White
-                         )
-                         Spacer(modifier = Modifier.height(8.dp))
-                         Text(
-                             text = agent.duration,
-                             style = MaterialTheme.typography.bodySmall,
-                             color = Color.White.copy(alpha = 0.8f)
-                         )
-                         Spacer(modifier = Modifier.height(16.dp))
-                         Text(
-                             text = agent.description,
-                             style = MaterialTheme.typography.bodyMedium,
-                             color = Color.White,
-                             textAlign = TextAlign.Center
-                         )
-                        Spacer(modifier = Modifier.height(16.dp))
-                         Text(
-                             text = "Topics: ${agent.topics.joinToString(", ")}",
-                             style = MaterialTheme.typography.bodySmall,
-                             color = Color.White.copy(alpha = 0.8f),
-                             textAlign = TextAlign.Center
-                         )
-                     }
-                 }
-
-                 Box(
-                     modifier = Modifier
-                         .align(Alignment.TopEnd)
-                         .padding(10.dp)
-                         .size(32.dp)
-                         .background(Color.Blue, CircleShape),
-                     contentAlignment = Alignment.Center
-                 ) {
-                     Text(text = index.toString(), color = Color.White)
-                 }
-             }
-         }
-     }
- }
-}
+    }
 }
 
 // @Preview(showBackground = true)
@@ -583,3 +742,82 @@ fun CourseDetailScreen(agent: Agent, index: Int, onClick: () -> Unit = {}) {
 //         DashboardScreen(mockViewModel)
 //     }
 // }
+
+@Composable
+fun StatsCard(
+    title: String,
+    value: String,
+    icon: ImageVector,
+    color: Color
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f))
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                icon,
+                contentDescription = title,
+                tint = color,
+                modifier = Modifier.size(32.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = value,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = color
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodySmall,
+                color = color.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+fun ContinueLearningItem(
+    courseTitle: String,
+    progress: Float,
+    lastAccessed: String
+) {
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = courseTitle,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = "${(progress * 100).toInt()}%",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = "Last accessed: $lastAccessed",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}

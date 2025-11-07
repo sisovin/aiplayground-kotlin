@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Aiagents Playapp</string>
-    <string name="default_web_client_id">YOUR_WEB_CLIENT_ID_HERE</string>
+    <!-- Web Client ID for Google Sign-In.
+         Get this from Firebase Console > Authentication > Sign-in method > Google > Web SDK configuration
+         It should look like: 692578096915-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com
+         NOT an API key starting with AIza -->
+    <string name="default_web_client_id">692578096915-6tc6p4opguhbp1itlfmv3tkvgq4t6do9.apps.googleusercontent.com</string>
 </resources>

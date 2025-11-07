@@ -86,13 +86,20 @@ class SigninActivity : ComponentActivity() {
         super.onActivityResult(requestCode, resultCode, data)
 
         if (requestCode == RC_GOOGLE_SIGN_IN) {
+            println("SigninActivity: onActivityResult for Google Sign-In")
             val task = GoogleSignIn.getSignedInAccountFromIntent(data)
             try {
                 val account = task.getResult(ApiException::class.java)
+                println("SigninActivity: Google account: ${account?.email}")
                 account?.idToken?.let { idToken ->
+                    println("SigninActivity: Got idToken, calling signInWithGoogle")
                     viewModel.signInWithGoogle(idToken)
+                } ?: run {
+                    println("SigninActivity: idToken is null")
+                    Toast.makeText(this, "Failed to get ID token", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: ApiException) {
+                println("SigninActivity: Google sign in failed: ${e.message}")
                 Toast.makeText(this, "Google sign in failed: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
@@ -342,6 +349,39 @@ fun SigninScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             "Continue with Google",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Email link sign in
+                OutlinedButton(
+                    onClick = {
+                        if (email.isBlank()) {
+                            Toast.makeText(context, "Please enter your email address", Toast.LENGTH_SHORT).show()
+                            return@OutlinedButton
+                        }
+                        viewModel.sendSignInLinkToEmail(email)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    enabled = !isLoading && email.isNotBlank()
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            Icons.Filled.Email,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            "Send Sign-in Link",
                             style = MaterialTheme.typography.titleMedium
                         )
                     }

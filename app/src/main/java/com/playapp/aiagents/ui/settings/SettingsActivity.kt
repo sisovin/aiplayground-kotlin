@@ -19,8 +19,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.playapp.aiagents.ui.viewmodel.AgentViewModel
+import com.playapp.aiagents.data.service.FirebaseAuthService
+import kotlinx.coroutines.launch
 
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,6 +38,22 @@ fun SettingsScreen(
 ) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("aiagents_settings", Context.MODE_PRIVATE) }
+    val coroutineScope = rememberCoroutineScope()
+
+    // Firebase auth service
+    val authService = remember { FirebaseAuthService() }
+    var currentUser by remember { mutableStateOf<com.google.firebase.auth.FirebaseUser?>(null) }
+    var isUserLoggedIn by remember { mutableStateOf(false) }
+
+    // Load auth state
+    LaunchedEffect(Unit) {
+        coroutineScope.launch {
+            authService.getAuthStateFlow().collect { user ->
+                currentUser = user
+                isUserLoggedIn = user != null
+            }
+        }
+    }
 
     // Settings state
     var userName by remember { mutableStateOf(prefs.getString("user_name", "") ?: "") }
@@ -123,6 +139,44 @@ fun SettingsScreen(
                             Icon(Icons.Filled.Email, contentDescription = null)
                         }
                     )
+
+                    // Authentication Status
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Authentication Status",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                if (isUserLoggedIn) {
+                                    "Signed in as ${currentUser?.email ?: "Unknown"}"
+                                } else {
+                                    "Not signed in"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (isUserLoggedIn) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                            )
+                        }
+                        Icon(
+                            if (isUserLoggedIn) Icons.Filled.CheckCircle else Icons.Filled.AccountCircle,
+                            contentDescription = "Auth Status",
+                            tint = if (isUserLoggedIn) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
+                    }
+
                 }
             }
 

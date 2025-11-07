@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
+        android:name=".AiAgentsApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -33,7 +34,16 @@
 
         <activity
             android:name=".ui.main.MainActivity"
-            android:exported="false" />
+            android:exported="true">
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https"
+                      android:host="aiagents-playapp.firebaseapp.com"
+                      android:pathPrefix="/finishSignUp" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".ui.detail.CourseDetailActivity"

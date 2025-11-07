@@ -73,7 +73,7 @@ class CourseDetailActivity : ComponentActivity() {
 
         setContent {
             MaterialTheme {
-                CourseDetailScreen(viewModel, courseId, progressRepository) {
+                CourseDetailScreen(viewModel, courseId, progressRepository, this@CourseDetailActivity) {
                     finish() // Go back when back button is pressed
                 }
             }
@@ -102,6 +102,7 @@ fun CourseDetailScreen(
     viewModel: AgentViewModel = viewModel(),
     courseId: Int = -1,
     progressRepository: ProgressRepository? = null,
+    activityContext: android.content.Context? = null,
     onBackPressed: () -> Unit = {}
 ) {
     val agents by viewModel.agents.collectAsState()
@@ -124,14 +125,18 @@ fun CourseDetailScreen(
             )
         },
         floatingActionButton = {
-            val context = LocalContext.current
             ExtendedFloatingActionButton(
                 onClick = {
                     println("CourseDetailScreen: Start Chat clicked, courseId = $courseId")
-                    val intent = android.content.Intent(context, com.playapp.aiagents.ui.playground.PlaygroundActivity::class.java)
-                    intent.putExtra("agent_id", courseId)
-                    println("CourseDetailScreen: Starting PlaygroundActivity with agent_id = $courseId")
-                    context.startActivity(intent)
+                    println("CourseDetailScreen: activityContext = $activityContext")
+                    android.widget.Toast.makeText(activityContext, "Starting chat with agent $courseId", android.widget.Toast.LENGTH_SHORT).show()
+                    activityContext?.let {
+                        val intent = android.content.Intent(it, com.playapp.aiagents.ui.playground.PlaygroundActivity::class.java)
+                        intent.putExtra("agent_id", courseId)
+                        println("CourseDetailScreen: Starting PlaygroundActivity with agent_id = $courseId")
+                        it.startActivity(intent)
+                        println("CourseDetailScreen: startActivity called")
+                    }
                 },
                 icon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = "Open Playground") },
                 text = { Text("Start Chat") }

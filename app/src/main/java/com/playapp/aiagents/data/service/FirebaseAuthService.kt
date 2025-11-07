@@ -54,11 +54,15 @@ class FirebaseAuthService {
     }
 
     suspend fun signInWithGoogle(idToken: String): Result<AuthResult> {
+        println("FirebaseAuthService: signInWithGoogle called")
         return try {
             val credential = GoogleAuthProvider.getCredential(idToken, null)
+            println("FirebaseAuthService: created credential")
             val result = auth.signInWithCredential(credential).await()
+            println("FirebaseAuthService: signInWithCredential success, user: ${result.user?.email}")
             Result.success(result)
         } catch (e: Exception) {
+            println("FirebaseAuthService: signInWithGoogle failed: ${e.message}")
             Log.e(TAG, "Error signing in with Google", e)
             Result.failure(e)
         }
@@ -106,5 +110,39 @@ class FirebaseAuthService {
             Log.e(TAG, "Error deleting account", e)
             Result.failure(e)
         }
+    }
+
+    suspend fun sendSignInLinkToEmail(email: String): Result<Unit> {
+        return try {
+            val actionCodeSettings = com.google.firebase.auth.ActionCodeSettings.newBuilder()
+                .setUrl("https://aiagents-playapp.firebaseapp.com/finishSignUp") // Replace with your domain
+                .setHandleCodeInApp(true)
+                .setAndroidPackageName("com.playapp.aiagents", true, null)
+                .build()
+
+            auth.sendSignInLinkToEmail(email, actionCodeSettings).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error sending sign-in link to email", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun signInWithEmailLink(email: String, emailLink: String): Result<AuthResult> {
+        return try {
+            if (auth.isSignInWithEmailLink(emailLink)) {
+                val result = auth.signInWithEmailLink(email, emailLink).await()
+                Result.success(result)
+            } else {
+                Result.failure(Exception("Invalid email link"))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error signing in with email link", e)
+            Result.failure(e)
+        }
+    }
+
+    fun isSignInWithEmailLink(emailLink: String): Boolean {
+        return auth.isSignInWithEmailLink(emailLink)
     }
 }
