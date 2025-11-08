@@ -1,0 +1,401 @@
+{
+  "Banner": [
+    {
+      "url": "https://res.cloudinary.com/dwhren8z6/image/upload/v1762565996/banner_1_giqevw.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwhren8z6/image/upload/v1762565995/banner_2_bqpmtz.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwhren8z6/image/upload/v1762565996/banner_3_evqcnn.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwhren8z6/image/upload/v1762565996/banner_4_sbbigd.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwhren8z6/image/upload/v1762566002/banner_5_fcfkap.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwhren8z6/image/upload/v1762566007/banner_6_edcyyr.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwhren8z6/image/upload/v1762565998/banner_7_xvjsmr.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwhren8z6/image/upload/v1762565999/banner_8_vlau1w.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwhren8z6/image/upload/v1762566006/banner_9_mjz0on.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwhren8z6/image/upload/v1762565997/banner_10_f0df17.png"
+    }
+  ],
+  "agents": [
+    {
+      "codeExamples": [
+        {
+          "code": "from crewai import Agent, Task, Crew\n\n# Create an agent\nagent = Agent(\n    role='Research Analyst',\n    goal='Analyze market trends',\n    backstory='You are an expert market analyst'\n)\n\n# Create a task\ntask = Task(\n    description='Analyze current market trends',\n    agent=agent\n)\n\n# Create and run crew\ncrew = Crew(agents=[agent], tasks=[task])\ncrew.kickoff()",
+          "description": "Simple example of creating and running a CrewAI agent",
+          "downloadUrl": "https://example.com/download/crewai-basic.py",
+          "fileName": "crewai_basic_example.py",
+          "id": "crewai-basic",
+          "language": "python",
+          "title": "Basic CrewAI Agent Setup"
+        },
+        {
+          "code": "from crewai import Agent, Task, Crew\nfrom crewai.memory import LongTermMemory\n\n# Create memory-enabled agent\nagent = Agent(\n    role='Conversation Agent',\n    goal='Maintain context in conversations',\n    backstory='You remember previous conversations',\n    memory=LongTermMemory()\n)\n\n# Agent will now maintain memory across interactions",
+          "description": "Example of implementing memory in CrewAI agents",
+          "downloadUrl": "https://example.com/download/memory-agent.py",
+          "fileName": "memory_agent_example.py",
+          "id": "memory-agent",
+          "language": "python",
+          "title": "Agent with Memory"
+        }
+      ],
+      "color": "#6200EE",
+      "description": "Learn how to build multi-agent systems with memory capabilities using CrewAI framework.",
+      "duration": "2 Hours 41 Minutes",
+      "id": 1,
+      "instructor": "Joao Moura",
+      "model": "llama2",
+      "modelType": "LLAMA2",
+      "ollamaPrompt": "You are an AI agent expert specialized in multi-agent systems and memory management. Help users understand how agents can maintain context and work together.",
+      "provider": "DEEPLEARNING AI",
+      "samplePrompts": [
+        "Explain how multi-agent systems maintain memory across conversations",
+        "How does CrewAI handle agent orchestration?",
+        "What are the best practices for agent memory management?"
+      ],
+      "setupInstructions": "This agent uses Llama 2 for multi-agent system discussions. Make sure Ollama is running locally with 'llama2' model installed. The agent specializes in memory management and CrewAI framework.",
+      "supportsStreaming": true,
+      "title": "LLMs as Operating Systems: Agent Memory",
+      "topics": [
+        "Multi-Agent Systems",
+        "Memory Management",
+        "CrewAI",
+        "Agent Orchestration"
+      ],
+      "videoTutorials": [
+        {
+          "description": "Learn the basics of CrewAI and how to set up multi-agent systems",
+          "duration": "15:30",
+          "id": "crewai-intro",
+          "order": 1,
+          "thumbnailUrl": "https://img.youtube.com/vi/example1/maxresdefault.jpg",
+          "title": "Introduction to CrewAI Framework",
+          "url": "https://www.youtube.com/watch?v=example1"
+        },
+        {
+          "description": "Understanding how agents maintain context and memory",
+          "duration": "22:45",
+          "id": "memory-management",
+          "order": 2,
+          "thumbnailUrl": "https://img.youtube.com/vi/example2/maxresdefault.jpg",
+          "title": "Agent Memory Management",
+          "url": "https://www.youtube.com/watch?v=example2"
+        }
+      ]
+    },
+    {
+      "codeExamples": [
+        {
+          "code": "import boto3\n\n# Initialize Bedrock client\nbedrock = boto3.client('bedrock-runtime')\n\n# Effective prompt for AWS service recommendations\nprompt = \"\"\"\nYou are an AWS Solutions Architect. A customer needs to build a serverless web application.\n\nProvide a detailed recommendation including:\n1. AWS services to use (Lambda, API Gateway, DynamoDB, etc.)\n2. Architecture diagram description\n3. Cost optimization tips\n4. Security best practices\n\nCustomer requirements:\n- Handle 10,000 concurrent users\n- Global deployment\n- Real-time data processing\n- Cost-effective solution\n\"\"\"\n\n# Use the prompt with Bedrock\nresponse = bedrock.invoke_model(\n    modelId='anthropic.claude-3-sonnet-20240229-v1:0',\n    body=json.dumps({\n        'prompt': prompt,\n        'max_tokens_to_sample': 2000\n    })\n)",
+          "description": "Example of crafting effective prompts for AWS Bedrock",
+          "downloadUrl": "https://example.com/download/aws-bedrock-prompt.py",
+          "fileName": "aws_bedrock_prompt_example.py",
+          "id": "aws-bedrock-prompt",
+          "language": "python",
+          "title": "AWS Bedrock Prompt Example"
+        }
+      ],
+      "color": "#03DAC5",
+      "description": "Master prompt engineering techniques with AWS best practices and real-world examples.",
+      "duration": "4 Hours",
+      "id": 2,
+      "instructor": "Amazon Team",
+      "model": "mistral",
+      "modelType": "MISTRAL",
+      "ollamaPrompt": "You are a prompt engineering expert. Guide users on crafting effective prompts and understanding how LLMs interpret instructions.",
+      "provider": "AWS SKILLBUILDER",
+      "samplePrompts": [
+        "How do I write better prompts for AWS services?",
+        "What are the key principles of prompt engineering?",
+        "Give me examples of effective vs ineffective prompts"
+      ],
+      "setupInstructions": "This agent uses Mistral for prompt engineering guidance. Ensure Ollama has 'mistral' model installed. The agent focuses on AWS best practices and prompt optimization techniques.",
+      "supportsStreaming": true,
+      "title": "Foundations of Prompt Engineering (AWS)",
+      "topics": [
+        "Prompt Design",
+        "AWS Services",
+        "Best Practices",
+        "Optimization"
+      ],
+      "videoTutorials": [
+        {
+          "description": "Learn fundamental prompt engineering techniques for AWS services",
+          "duration": "18:20",
+          "id": "aws-prompt-basics",
+          "order": 1,
+          "thumbnailUrl": "https://img.youtube.com/vi/aws-example1/maxresdefault.jpg",
+          "title": "AWS Prompt Engineering Basics",
+          "url": "https://www.youtube.com/watch?v=aws-example1"
+        },
+        {
+          "description": "Advanced prompting techniques using Amazon Bedrock models",
+          "duration": "25:10",
+          "id": "aws-bedrock-prompts",
+          "order": 2,
+          "thumbnailUrl": "https://img.youtube.com/vi/aws-example2/maxresdefault.jpg",
+          "title": "Prompt Engineering with Amazon Bedrock",
+          "url": "https://www.youtube.com/watch?v=aws-example2"
+        }
+      ]
+    },
+    {
+      "color": "#3700B3",
+      "description": "Build stateful, graph-based AI agents with LangGraph for complex workflows.",
+      "duration": "9 Hours",
+      "id": 3,
+      "instructor": "Harrison Chase",
+      "model": "codellama",
+      "modelType": "CODELLAMA",
+      "ollamaPrompt": "You are a LangGraph specialist. Explain how to build graph-based agent workflows and manage complex state transitions.",
+      "provider": "LANGCHAIN ACADEMY",
+      "samplePrompts": [
+        "How do I create a simple graph workflow in LangGraph?",
+        "Explain state management in graph-based agents",
+        "What are the advantages of LangGraph over linear chains?"
+      ],
+      "setupInstructions": "This agent uses CodeLlama for code-focused LangGraph discussions. Install 'codellama' model in Ollama. The agent specializes in graph architecture and stateful agent design.",
+      "supportsStreaming": true,
+      "title": "Introduction to LangGraph",
+      "topics": [
+        "LangGraph",
+        "State Management",
+        "Graph Architecture",
+        "Workflows"
+      ]
+    },
+    {
+      "color": "#BB86FC",
+      "description": "Comprehensive course on LLM agent fundamentals and advanced capabilities.",
+      "duration": "4 Hours 40 Minutes",
+      "id": 4,
+      "instructor": "Dawn Song",
+      "model": "llama2",
+      "modelType": "LLAMA2",
+      "ollamaPrompt": "You are an LLM agent educator. Teach core concepts of how language models can act as intelligent agents.",
+      "provider": "AGENTICAI-LEARNING.ORG",
+      "samplePrompts": [
+        "What are the fundamental capabilities of LLM agents?",
+        "How do LLMs differ from traditional AI agents?",
+        "What are the current limitations of LLM-based agents?"
+      ],
+      "setupInstructions": "This agent uses Llama 2 for educational discussions about LLM agents. Install 'llama2' model in Ollama. The agent covers both fundamentals and advanced agent concepts.",
+      "supportsStreaming": true,
+      "title": "Large Language Model Agents MOOC",
+      "topics": [
+        "LLM Fundamentals",
+        "Agent Design",
+        "Capabilities",
+        "Limitations"
+      ]
+    },
+    {
+      "color": "#CF6679",
+      "description": "Practical guide to implementing AI agents using LangGraph framework.",
+      "duration": "1 Hour 32 Minutes",
+      "id": 5,
+      "instructor": "Harrison Chase",
+      "model": "codellama",
+      "modelType": "CODELLAMA",
+      "ollamaPrompt": "You are a LangGraph implementation expert. Show users how to build practical AI agents with real-world applications.",
+      "provider": "DEEPLEARNING AI",
+      "samplePrompts": [
+        "Show me how to implement a simple agent in LangGraph",
+        "What are common agent patterns in LangGraph?",
+        "How do I integrate LangGraph with external APIs?"
+      ],
+      "setupInstructions": "This agent uses CodeLlama for practical LangGraph implementation guidance. Install 'codellama' model in Ollama. The agent focuses on real-world agent building and integration.",
+      "supportsStreaming": true,
+      "title": "Building AI Agents in LangGraph",
+      "topics": [
+        "LangGraph Implementation",
+        "Practical Examples",
+        "Agent Patterns",
+        "Integration"
+      ]
+    },
+    {
+      "color": "#03A9F4",
+      "description": "Master Retrieval-Augmented Generation (RAG) with NVIDIA's advanced techniques.",
+      "duration": "9 Hours",
+      "id": 6,
+      "instructor": "Nvidia Team",
+      "model": "mistral",
+      "modelType": "MISTRAL",
+      "ollamaPrompt": "You are a RAG specialist. Explain how to build retrieval-augmented generation systems for grounded AI responses.",
+      "provider": "LEARN NVIDIA",
+      "samplePrompts": [
+        "How does RAG improve LLM responses?",
+        "What vector databases work best with RAG?",
+        "Explain the retrieval process in RAG systems"
+      ],
+      "setupInstructions": "This agent uses Mistral for RAG system discussions. Install 'mistral' model in Ollama. The agent covers NVIDIA tools and advanced RAG techniques.",
+      "supportsStreaming": true,
+      "title": "Building RAG Agents with LLMs",
+      "topics": [
+        "RAG Architecture",
+        "Vector Databases",
+        "Retrieval Systems",
+        "NVIDIA Tools"
+      ]
+    },
+    {
+      "color": "#4CAF50",
+      "description": "Explore design patterns for building robust multi-agent systems with AutoGen.",
+      "duration": "1 Hour 26 Minutes",
+      "id": 7,
+      "instructor": "Chi Wang",
+      "model": "llama2",
+      "modelType": "LLAMA2",
+      "ollamaPrompt": "You are an AutoGen expert. Guide users through agentic design patterns and multi-agent orchestration.",
+      "provider": "DEEPLEARNING AI",
+      "samplePrompts": [
+        "What are the main design patterns in AutoGen?",
+        "How do I orchestrate multiple agents in AutoGen?",
+        "Show me an example of a robust multi-agent system"
+      ],
+      "setupInstructions": "This agent uses Llama 2 for AutoGen framework discussions. Install 'llama2' model in Ollama. The agent specializes in design patterns and multi-agent architecture.",
+      "supportsStreaming": true,
+      "title": "AI Agentic Design Patterns with AutoGen",
+      "topics": [
+        "AutoGen Framework",
+        "Design Patterns",
+        "Multi-Agent",
+        "Architecture"
+      ]
+    },
+    {
+      "color": "#FF9800",
+      "description": "Deep dive into agent memory systems and how LLMs manage context.",
+      "duration": "1 Hour 22 Minutes",
+      "id": 8,
+      "instructor": "Charles Packer",
+      "model": "neural-chat",
+      "modelType": "NEURAL_CHAT",
+      "ollamaPrompt": "You are an agent memory expert. Explain how AI agents maintain and utilize memory for coherent interactions.",
+      "provider": "DEEPLEARNING AI",
+      "samplePrompts": [
+        "How do LLMs maintain context in conversations?",
+        "What are different types of agent memory?",
+        "Explain long-term memory in AI agents"
+      ],
+      "setupInstructions": "This agent uses Neural Chat for memory system discussions. Install 'neural-chat' model in Ollama. The agent focuses on context management and memory architectures.",
+      "supportsStreaming": true,
+      "title": "LLMs as Operating Systems: Agent Memory",
+      "topics": [
+        "Memory Systems",
+        "Context Management",
+        "Long-term Memory",
+        "Agent State"
+      ]
+    },
+    {
+      "color": "#9C27B0",
+      "description": "Build advanced RAG systems with agentic capabilities using LlamaIndex.",
+      "duration": "44 Minutes",
+      "id": 9,
+      "instructor": "Jerry Liu",
+      "model": "mistral",
+      "modelType": "MISTRAL",
+      "ollamaPrompt": "You are a LlamaIndex specialist. Show users how to build intelligent RAG systems with agentic behaviors.",
+      "provider": "DEEPLEARNING AI",
+      "samplePrompts": [
+        "How do I build agentic RAG with LlamaIndex?",
+        "What are query engines in LlamaIndex?",
+        "Explain document processing in RAG systems"
+      ],
+      "setupInstructions": "This agent uses Mistral for LlamaIndex discussions. Install 'mistral' model in Ollama. The agent covers agentic RAG patterns and advanced query techniques.",
+      "supportsStreaming": true,
+      "title": "Building Agentic RAG with LlamaIndex",
+      "topics": [
+        "LlamaIndex",
+        "Agentic RAG",
+        "Query Engines",
+        "Document Processing"
+      ]
+    }
+  ],
+  "users": {
+    "userId1": {
+      "profile": {
+        "id": "userId1",
+        "email": "user@example.com",
+        "full_name": "John Doe",
+        "avatar_url": "https://example.com/avatar.jpg",
+        "created_at": "2025-01-01T00:00:00Z",
+        "updated_at": "2025-01-01T00:00:00Z"
+      },
+      "settings": {
+        "theme": "system",
+        "language": "en",
+        "notifications_enabled": true,
+        "auto_save_conversations": true,
+        "default_model": "llama2",
+        "streaming_enabled": true,
+        "max_tokens": 2048,
+        "custom_settings": {}
+      },
+      "bookmarks": [
+        {
+          "agent_id": 1,
+          "bookmark_type": "favorite",
+          "notes": "Great for learning AI basics",
+          "created_at": "2025-01-01T00:00:00Z"
+        }
+      ]
+    }
+  },
+  "conversations": {
+    "convId1": {
+      "user_id": "userId1",
+      "agent_id": 1,
+      "title": "First Conversation",
+      "model_used": "llama2",
+      "is_active": true,
+      "total_messages": 5,
+      "last_message_at": "2025-01-01T00:00:00Z",
+      "messages": [
+        {
+          "sender_type": "user",
+          "content": "Hello, can you explain multi-agent systems?",
+          "content_type": "text",
+          "created_at": "2025-01-01T00:00:00Z"
+        },
+        {
+          "sender_type": "agent",
+          "content": "Multi-agent systems involve multiple AI agents working together...",
+          "content_type": "text",
+          "tokens_used": 150,
+          "created_at": "2025-01-01T00:00:05Z"
+        }
+      ]
+    }
+  },
+  "cart": {
+    "userId1": {
+      "items": [
+        {
+          "agent_id": 2,
+          "quantity": 1,
+          "price": 29.99,
+          "currency": "USD",
+          "added_at": "2025-01-01T00:00:00Z"
+        }
+      ]
+    }
+  }
+}

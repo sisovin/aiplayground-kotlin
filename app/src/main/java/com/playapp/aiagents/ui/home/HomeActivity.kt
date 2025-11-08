@@ -1,5 +1,6 @@
 package com.playapp.aiagents.ui.home
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -24,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -37,11 +39,17 @@ import com.playapp.aiagents.ui.viewmodel.AgentViewModel
 import com.playapp.aiagents.data.repository.AgentRepository
 import com.playapp.aiagents.ui.viewmodel.CartViewModel
 import com.playapp.aiagents.data.repository.CartRepository
+import com.playapp.aiagents.ui.viewmodel.BannerViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.Image
+import coil.compose.rememberAsyncImagePainter
 import androidx.compose.ui.tooling.preview.Preview
+import com.google.firebase.auth.FirebaseAuth
+import com.playapp.aiagents.ui.notifications.NotificationsActivity
+import com.playapp.aiagents.ui.playground.PlaygroundActivity
 
 class HomeActivity : ComponentActivity() {
     private val viewModel: AgentViewModel by viewModels {
@@ -68,6 +76,18 @@ class HomeActivity : ComponentActivity() {
         }
     }
 
+    private val bannerViewModel: BannerViewModel by viewModels {
+        object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                if (modelClass.isAssignableFrom(BannerViewModel::class.java)) {
+                    @Suppress("UNCHECKED_CAST")
+                    return BannerViewModel(application) as T
+                }
+                throw IllegalArgumentException("Unknown ViewModel class")
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -75,6 +95,8 @@ class HomeActivity : ComponentActivity() {
                 HomeScreen(
                     viewModel = viewModel,
                     cartViewModel = cartViewModel,
+                    bannerViewModel = bannerViewModel,
+                    activityContext = this,
                     onGetStarted = {
                         startActivity(Intent(this, MainActivity::class.java))
                         finish()
@@ -99,14 +121,21 @@ class HomeActivity : ComponentActivity() {
 fun HomeScreen(
     viewModel: AgentViewModel? = null,
     cartViewModel: CartViewModel? = null,
+    bannerViewModel: BannerViewModel? = null,
     onGetStarted: () -> Unit = {},
     onSettings: () -> Unit = {},
     onSignUp: () -> Unit = {},
     onCartClick: () -> Unit = {},
+    activityContext: Context = LocalContext.current,
     previewAgents: List<com.playapp.aiagents.data.model.Agent> = emptyList()
 ) {
     val agents by viewModel?.agents?.collectAsState() ?: remember { mutableStateOf(previewAgents) }
+    val banners by bannerViewModel?.banners?.collectAsState() ?: remember { mutableStateOf(emptyList<com.playapp.aiagents.data.model.Banner>()) }
     val coroutineScope = rememberCoroutineScope()
+
+    // Navigation state
+    var selectedNavItem by remember { mutableStateOf(BottomNavItem.Home) }
+    var showMenu by remember { mutableStateOf(false) }
 
     // Animation states
     var heroVisible by remember { mutableStateOf(false) }
@@ -123,15 +152,44 @@ fun HomeScreen(
         agentsVisible = true
     }
 
+    val context = LocalContext.current
+
+    // Handle navigation
+    fun handleNavigation(item: BottomNavItem) {
+        selectedNavItem = item
+        when (item) {
+            BottomNavItem.Home -> {
+                // Already on home
+            }
+            BottomNavItem.Courses -> {
+                // Navigate to courses
+                onGetStarted()
+            }
+            BottomNavItem.Playground -> {
+                // Handled directly in BottomNavigationBar
+            }
+            BottomNavItem.Profile -> {
+                // Navigate to profile
+                val intent = Intent(activityContext, com.playapp.aiagents.ui.profile.ProfileActivity::class.java)
+                activityContext.startActivity(intent)
+            }
+            BottomNavItem.Menu -> {
+                // Menu is handled separately in BottomNavigationBar
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Filled.SmartToy,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
+                        Image(
+                            painter = rememberAsyncImagePainter(
+                                "https://res.cloudinary.com/dwhren8z6/image/upload/v1762566004/ic_aiagents_playapp-nobg_ngwaao.png"
+                            ),
+                            contentDescription = "AI Agents PlayApp Logo",
+                            modifier = Modifier.size(32.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
@@ -170,6 +228,28 @@ fun HomeScreen(
                     }
                 }
             )
+        },
+        bottomBar = {
+            BottomNavigationBar(
+                selectedItem = selectedNavItem,
+                onItemSelected = ::handleNavigation,
+                showMenu = showMenu,
+                onShowMenuChange = { showMenu = it },
+                agents = agents,
+                context = context,
+                onNavigateToHome = { /* Already on home */ },
+                onNavigateToCourses = onGetStarted,
+                onNavigateToCart = onCartClick,
+                onNavigateToProfile = {
+                    val intent = Intent(context, com.playapp.aiagents.ui.profile.ProfileActivity::class.java)
+                    context.startActivity(intent)
+                },
+                onNavigateToSettings = onSettings,
+                onNavigateToNotifications = {
+                    val intent = Intent(context, com.playapp.aiagents.ui.notifications.NotificationsActivity::class.java)
+                    context.startActivity(intent)
+                }
+            )
         }
     ) { paddingValues ->
         LazyColumn(
@@ -181,7 +261,7 @@ fun HomeScreen(
             // Hero Section
             item {
                 HeroSection(
-                    isVisible = heroVisible,
+                    banners = banners,
                     onGetStarted = onGetStarted
                 )
             }
@@ -230,96 +310,110 @@ fun HomeScreen(
 
 @Composable
 fun HeroSection(
-    isVisible: Boolean,
+    banners: List<com.playapp.aiagents.data.model.Banner> = emptyList(),
     onGetStarted: () -> Unit
 ) {
+    // Auto-banner animation state
+    var currentBannerIndex by remember { mutableStateOf(0) }
+
+    // Auto-cycle through banners every 3 seconds with proper animation
+    LaunchedEffect(banners) {
+        if (banners.isNotEmpty() && banners.size > 1) {
+            while (true) {
+                delay(3000) // 3 seconds
+                currentBannerIndex = (currentBannerIndex + 1) % banners.size
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(400.dp)
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primaryContainer,
-                        MaterialTheme.colorScheme.surface
-                    )
-                )
-            ),
-        contentAlignment = Alignment.Center
+            .height(300.dp),
+        contentAlignment = Alignment.BottomCenter
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(24.dp)
-        ) {
-            // Animated icon
+        // Background banner image
+        if (banners.isNotEmpty()) {
+            val currentBanner = banners[currentBannerIndex]
+            // Calculate width based on 996:760 aspect ratio (1.31:1)
+            val bannerWidth = 300.dp * 1.31f
+            Image(
+                painter = rememberAsyncImagePainter(currentBanner.url),
+                contentDescription = "Hero Banner",
+                modifier = Modifier
+                    .width(bannerWidth)
+                    .height(300.dp)
+                    .align(Alignment.Center),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            // Fallback gradient background if no banners
             Box(
                 modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape)
+                    .fillMaxSize()
                     .background(
-                        brush = Brush.radialGradient(
+                        brush = Brush.verticalGradient(
                             colors = listOf(
-                                MaterialTheme.colorScheme.primary,
-                                MaterialTheme.colorScheme.secondary
+                                MaterialTheme.colorScheme.primaryContainer,
+                                MaterialTheme.colorScheme.surface
                             )
                         )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Filled.Psychology,
-                    contentDescription = null,
-                    modifier = Modifier.size(60.dp),
-                    tint = Color.White
-                )
+                    )
+            )
+        }
+
+        // Content overlay at bottom
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(24.dp)
+        ) {
+            // Banner indicators
+            if (banners.size > 1) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(bottom = 16.dp)
+                ) {
+                    banners.forEachIndexed { index, _ ->
+                        Box(
+                            modifier = Modifier
+                                .size(if (index == currentBannerIndex) 12.dp else 8.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    Color.White.copy(
+                                        alpha = if (index == currentBannerIndex) 1f else 0.5f
+                                    )
+                                )
+                                .clickable {
+                                    currentBannerIndex = index
+                                    println("HeroSection: Manual banner switch to index $index")
+                                }
+                        )
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "Welcome to AI Playground",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Explore, learn, and build with AI agents powered by Ollama. Experience the future of conversational AI on your device.",
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            AnimatedVisibility(visible = isVisible) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Button(
+                    onClick = onGetStarted,
+                    modifier = Modifier
+                        .height(56.dp)
+                        .padding(horizontal = 24.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
                 ) {
-                    Button(
-                        onClick = onGetStarted,
-                        modifier = Modifier
-                            .height(56.dp)
-                            .padding(horizontal = 24.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Text("Get Started", fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
-                    }
+                    Text("Get Started", fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
+                }
 
-                    OutlinedButton(
-                        onClick = { /* Scroll to features */ },
-                        modifier = Modifier.height(56.dp)
-                    ) {
-                        Text("Learn More")
-                    }
+                OutlinedButton(
+                    onClick = { /* Scroll to features */ },
+                    modifier = Modifier.height(56.dp)
+                ) {
+                    Text("Learn More")
                 }
             }
         }
@@ -911,6 +1005,143 @@ fun FooterSection() {
     }
 }
 
+enum class BottomNavItem(val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    Home("Home", Icons.Filled.Home),
+    Courses("Courses", Icons.Filled.School),
+    Playground("Playground", Icons.Filled.SmartToy),
+    Profile("Profile", Icons.Filled.Person),
+    Menu("Menu", Icons.Filled.Menu)
+}
+
+@Composable
+fun BottomNavigationBar(
+    selectedItem: BottomNavItem,
+    onItemSelected: (BottomNavItem) -> Unit,
+    showMenu: Boolean,
+    onShowMenuChange: (Boolean) -> Unit,
+    agents: List<com.playapp.aiagents.data.model.Agent>,
+    context: Context = LocalContext.current,
+    onNavigateToHome: () -> Unit = {},
+    onNavigateToCourses: () -> Unit = {},
+    onNavigateToCart: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {}
+) {
+    Box {
+        NavigationBar {
+            BottomNavItem.values().forEach { item ->
+                NavigationBarItem(
+                    icon = {
+                        Icon(item.icon, contentDescription = item.title)
+                    },
+                    label = null, // Remove text labels
+                    selected = selectedItem == item,
+                    onClick = {
+                        if (item == BottomNavItem.Menu) {
+                            onShowMenuChange(true)
+                        } else if (item == BottomNavItem.Playground) {
+                            // Check if user is authenticated or within trial period
+                            val currentUser = FirebaseAuth.getInstance().currentUser
+                            val isAuthenticated = currentUser != null
+                            val isWithinTrial = currentUser?.metadata?.creationTimestamp?.let { creationTime ->
+                                val thirtyDaysInMillis = 30L * 24L * 60L * 60L * 1000L // 30 days in milliseconds
+                                val currentTime = System.currentTimeMillis()
+                                (currentTime - creationTime) <= thirtyDaysInMillis
+                            } ?: false
+
+                            if (isAuthenticated) {
+                                // Authenticated user - navigate to Dashboard (MainActivity)
+                                val intent = Intent(context, com.playapp.aiagents.ui.main.MainActivity::class.java)
+                                context.startActivity(intent)
+                            } else if (isWithinTrial) {
+                                // Trial user within 30 days - allow Playground access
+                                val intent = Intent(context, PlaygroundActivity::class.java)
+                                val firstAgent = agents.firstOrNull()
+                                if (firstAgent != null) {
+                                    intent.putExtra("agent_id", firstAgent.id)
+                                }
+                                context.startActivity(intent)
+                            } else {
+                                // Not authenticated and trial expired - redirect to sign in
+                                android.widget.Toast.makeText(
+                                    context,
+                                    "Please sign in to access the AI Playground. Trial users get 30 days free access!",
+                                    android.widget.Toast.LENGTH_LONG
+                                ).show()
+                                val intent = Intent(context, com.playapp.aiagents.ui.auth.SigninActivity::class.java)
+                                context.startActivity(intent)
+                            }
+                        } else {
+                            onItemSelected(item)
+                        }
+                    }
+                )
+            }
+        }
+
+        // Dropdown Menu for Menu button
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { onShowMenuChange(false) }
+        ) {
+            DropdownMenuItem(
+                text = { Text("Home") },
+                onClick = {
+                    onShowMenuChange(false)
+                    onNavigateToHome()
+                },
+                leadingIcon = { Icon(Icons.Filled.Home, contentDescription = "Home") }
+            )
+
+            DropdownMenuItem(
+                text = { Text("Courses") },
+                onClick = {
+                    onShowMenuChange(false)
+                    onNavigateToCourses()
+                },
+                leadingIcon = { Icon(Icons.Filled.School, contentDescription = "Courses") }
+            )
+
+            DropdownMenuItem(
+                text = { Text("Cart") },
+                onClick = {
+                    onShowMenuChange(false)
+                    onNavigateToCart()
+                },
+                leadingIcon = { Icon(Icons.Filled.ShoppingCart, contentDescription = "Cart") }
+            )
+
+            DropdownMenuItem(
+                text = { Text("Profile") },
+                onClick = {
+                    onShowMenuChange(false)
+                    onNavigateToProfile()
+                },
+                leadingIcon = { Icon(Icons.Filled.Person, contentDescription = "Profile") }
+            )
+
+            DropdownMenuItem(
+                text = { Text("Notifications") },
+                onClick = {
+                    onShowMenuChange(false)
+                    onNavigateToNotifications()
+                },
+                leadingIcon = { Icon(Icons.Filled.Notifications, contentDescription = "Notifications") }
+            )
+
+            DropdownMenuItem(
+                text = { Text("Settings") },
+                onClick = {
+                    onShowMenuChange(false)
+                    onNavigateToSettings()
+                },
+                leadingIcon = { Icon(Icons.Filled.Settings, contentDescription = "Settings") }
+            )
+        }
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreview() {
@@ -926,7 +1157,7 @@ fun HomeScreenPreview() {
             topics = listOf("Chat", "General"),
             ollamaPrompt = "You are a helpful assistant.",
             model = "llama2",
-            modelType = com.playapp.aiagents.data.model.OllamaModel.LLAMA2,
+            modelType = "LLAMA2",
             samplePrompts = listOf("Hello!", "How are you?"),
             setupInstructions = "Just start chatting.",
             supportsStreaming = true
@@ -942,7 +1173,7 @@ fun HomeScreenPreview() {
             topics = listOf("Coding", "Programming"),
             ollamaPrompt = "You are a code expert.",
             model = "codellama",
-            modelType = com.playapp.aiagents.data.model.OllamaModel.CODELLAMA,
+            modelType = "CODELLAMA",
             samplePrompts = listOf("Write a function to sort an array.", "Explain recursion."),
             setupInstructions = "Provide code examples.",
             supportsStreaming = true
@@ -958,7 +1189,7 @@ fun HomeScreenPreview() {
             topics = listOf("Writing", "Creativity"),
             ollamaPrompt = "You are a creative writer.",
             model = "mistral",
-            modelType = com.playapp.aiagents.data.model.OllamaModel.MISTRAL,
+            modelType = "MISTRAL",
             samplePrompts = listOf("Write a short story.", "Brainstorm plot ideas."),
             setupInstructions = "Focus on narrative.",
             supportsStreaming = true

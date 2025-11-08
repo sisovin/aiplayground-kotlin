@@ -1,22 +1,67 @@
 {
+  "Banner": [
+    {
+      "url": "https://res.cloudinary.com/dwhren8z6/image/upload/v1762565996/banner_1_giqevw.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwhren8z6/image/upload/v1762565995/banner_2_bqpmtz.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwhren8z6/image/upload/v1762565996/banner_3_evqcnn.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwhren8z6/image/upload/v1762565996/banner_4_sbbigd.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwhren8z6/image/upload/v1762566002/banner_5_fcfkap.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwhren8z6/image/upload/v1762566007/banner_6_edcyyr.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwhren8z6/image/upload/v1762565998/banner_7_xvjsmr.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwhren8z6/image/upload/v1762565999/banner_8_vlau1w.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwhren8z6/image/upload/v1762566006/banner_9_mjz0on.png"
+    },
+    {
+      "url": "https://res.cloudinary.com/dwhren8z6/image/upload/v1762565997/banner_10_f0df17.png"
+    }
+  ],
   "agents": [
     {
-      "id": 1,
-      "title": "LLMs as Operating Systems: Agent Memory",
-      "provider": "DEEPLEARNING AI",
-      "instructor": "Joao Moura",
-      "duration": "2 Hours 41 Minutes",
-      "description": "Learn how to build multi-agent systems with memory capabilities using CrewAI framework.",
-      "color": "#6200EE",
-      "topics": [
-        "Multi-Agent Systems",
-        "Memory Management",
-        "CrewAI",
-        "Agent Orchestration"
+      "codeExamples": [
+        {
+          "code": "from crewai import Agent, Task, Crew\n\n# Create an agent\nagent = Agent(\n    role='Research Analyst',\n    goal='Analyze market trends',\n    backstory='You are an expert market analyst'\n)\n\n# Create a task\ntask = Task(\n    description='Analyze current market trends',\n    agent=agent\n)\n\n# Create and run crew\ncrew = Crew(agents=[agent], tasks=[task])\ncrew.kickoff()",
+          "description": "Simple example of creating and running a CrewAI agent",
+          "downloadUrl": "https://example.com/download/crewai-basic.py",
+          "fileName": "crewai_basic_example.py",
+          "id": "crewai-basic",
+          "language": "python",
+          "title": "Basic CrewAI Agent Setup"
+        },
+        {
+          "code": "from crewai import Agent, Task, Crew\nfrom crewai.memory import LongTermMemory\n\n# Create memory-enabled agent\nagent = Agent(\n    role='Conversation Agent',\n    goal='Maintain context in conversations',\n    backstory='You remember previous conversations',\n    memory=LongTermMemory()\n)\n\n# Agent will now maintain memory across interactions",
+          "description": "Example of implementing memory in CrewAI agents",
+          "downloadUrl": "https://example.com/download/memory-agent.py",
+          "fileName": "memory_agent_example.py",
+          "id": "memory-agent",
+          "language": "python",
+          "title": "Agent with Memory"
+        }
       ],
-      "ollamaPrompt": "You are an AI agent expert specialized in multi-agent systems and memory management. Help users understand how agents can maintain context and work together.",
+      "color": "#6200EE",
+      "description": "Learn how to build multi-agent systems with memory capabilities using CrewAI framework.",
+      "duration": "2 Hours 41 Minutes",
+      "id": 1,
+      "instructor": "Joao Moura",
       "model": "llama2",
       "modelType": "LLAMA2",
+      "ollamaPrompt": "You are an AI agent expert specialized in multi-agent systems and memory management. Help users understand how agents can maintain context and work together.",
+      "provider": "DEEPLEARNING AI",
       "samplePrompts": [
         "Explain how multi-agent systems maintain memory across conversations",
         "How does CrewAI handle agent orchestration?",
@@ -24,64 +69,55 @@
       ],
       "setupInstructions": "This agent uses Llama 2 for multi-agent system discussions. Make sure Ollama is running locally with 'llama2' model installed. The agent specializes in memory management and CrewAI framework.",
       "supportsStreaming": true,
+      "title": "LLMs as Operating Systems: Agent Memory",
+      "topics": [
+        "Multi-Agent Systems",
+        "Memory Management",
+        "CrewAI",
+        "Agent Orchestration"
+      ],
       "videoTutorials": [
         {
-          "id": "crewai-intro",
-          "title": "Introduction to CrewAI Framework",
           "description": "Learn the basics of CrewAI and how to set up multi-agent systems",
-          "url": "https://www.youtube.com/watch?v=example1",
           "duration": "15:30",
+          "id": "crewai-intro",
+          "order": 1,
           "thumbnailUrl": "https://img.youtube.com/vi/example1/maxresdefault.jpg",
-          "order": 1
+          "title": "Introduction to CrewAI Framework",
+          "url": "https://www.youtube.com/watch?v=example1"
         },
         {
-          "id": "memory-management",
-          "title": "Agent Memory Management",
           "description": "Understanding how agents maintain context and memory",
-          "url": "https://www.youtube.com/watch?v=example2",
           "duration": "22:45",
+          "id": "memory-management",
+          "order": 2,
           "thumbnailUrl": "https://img.youtube.com/vi/example2/maxresdefault.jpg",
-          "order": 2
-        }
-      ],
-      "codeExamples": [
-        {
-          "id": "crewai-basic",
-          "title": "Basic CrewAI Agent Setup",
-          "description": "Simple example of creating and running a CrewAI agent",
-          "language": "python",
-          "code": "from crewai import Agent, Task, Crew\n\n# Create an agent\nagent = Agent(\n    role='Research Analyst',\n    goal='Analyze market trends',\n    backstory='You are an expert market analyst'\n)\n\n# Create a task\ntask = Task(\n    description='Analyze current market trends',\n    agent=agent\n)\n\n# Create and run crew\ncrew = Crew(agents=[agent], tasks=[task])\ncrew.kickoff()",
-          "downloadUrl": "https://example.com/download/crewai-basic.py",
-          "fileName": "crewai_basic_example.py"
-        },
-        {
-          "id": "memory-agent",
-          "title": "Agent with Memory",
-          "description": "Example of implementing memory in CrewAI agents",
-          "language": "python",
-          "code": "from crewai import Agent, Task, Crew\nfrom crewai.memory import LongTermMemory\n\n# Create memory-enabled agent\nagent = Agent(\n    role='Conversation Agent',\n    goal='Maintain context in conversations',\n    backstory='You remember previous conversations',\n    memory=LongTermMemory()\n)\n\n# Agent will now maintain memory across interactions",
-          "downloadUrl": "https://example.com/download/memory-agent.py",
-          "fileName": "memory_agent_example.py"
+          "title": "Agent Memory Management",
+          "url": "https://www.youtube.com/watch?v=example2"
         }
       ]
     },
     {
-      "id": 2,
-      "title": "Foundations of Prompt Engineering (AWS)",
-      "provider": "AWS SKILLBUILDER",
-      "instructor": "Amazon Team",
-      "duration": "4 Hours",
-      "description": "Master prompt engineering techniques with AWS best practices and real-world examples.",
-      "color": "#03DAC5",
-      "topics": [
-        "Prompt Design",
-        "AWS Services",
-        "Best Practices",
-        "Optimization"
+      "codeExamples": [
+        {
+          "code": "import boto3\n\n# Initialize Bedrock client\nbedrock = boto3.client('bedrock-runtime')\n\n# Effective prompt for AWS service recommendations\nprompt = \"\"\"\nYou are an AWS Solutions Architect. A customer needs to build a serverless web application.\n\nProvide a detailed recommendation including:\n1. AWS services to use (Lambda, API Gateway, DynamoDB, etc.)\n2. Architecture diagram description\n3. Cost optimization tips\n4. Security best practices\n\nCustomer requirements:\n- Handle 10,000 concurrent users\n- Global deployment\n- Real-time data processing\n- Cost-effective solution\n\"\"\"\n\n# Use the prompt with Bedrock\nresponse = bedrock.invoke_model(\n    modelId='anthropic.claude-3-sonnet-20240229-v1:0',\n    body=json.dumps({\n        'prompt': prompt,\n        'max_tokens_to_sample': 2000\n    })\n)",
+          "description": "Example of crafting effective prompts for AWS Bedrock",
+          "downloadUrl": "https://example.com/download/aws-bedrock-prompt.py",
+          "fileName": "aws_bedrock_prompt_example.py",
+          "id": "aws-bedrock-prompt",
+          "language": "python",
+          "title": "AWS Bedrock Prompt Example"
+        }
       ],
-      "ollamaPrompt": "You are a prompt engineering expert. Guide users on crafting effective prompts and understanding how LLMs interpret instructions.",
+      "color": "#03DAC5",
+      "description": "Master prompt engineering techniques with AWS best practices and real-world examples.",
+      "duration": "4 Hours",
+      "id": 2,
+      "instructor": "Amazon Team",
       "model": "mistral",
       "modelType": "MISTRAL",
+      "ollamaPrompt": "You are a prompt engineering expert. Guide users on crafting effective prompts and understanding how LLMs interpret instructions.",
+      "provider": "AWS SKILLBUILDER",
       "samplePrompts": [
         "How do I write better prompts for AWS services?",
         "What are the key principles of prompt engineering?",
@@ -89,265 +125,278 @@
       ],
       "setupInstructions": "This agent uses Mistral for prompt engineering guidance. Ensure Ollama has 'mistral' model installed. The agent focuses on AWS best practices and prompt optimization techniques.",
       "supportsStreaming": true,
+      "title": "Foundations of Prompt Engineering (AWS)",
+      "topics": [
+        "Prompt Design",
+        "AWS Services",
+        "Best Practices",
+        "Optimization"
+      ],
       "videoTutorials": [
         {
-          "id": "aws-prompt-basics",
-          "title": "AWS Prompt Engineering Basics",
           "description": "Learn fundamental prompt engineering techniques for AWS services",
-          "url": "https://www.youtube.com/watch?v=aws-example1",
           "duration": "18:20",
+          "id": "aws-prompt-basics",
+          "order": 1,
           "thumbnailUrl": "https://img.youtube.com/vi/aws-example1/maxresdefault.jpg",
-          "order": 1
+          "title": "AWS Prompt Engineering Basics",
+          "url": "https://www.youtube.com/watch?v=aws-example1"
         },
         {
-          "id": "aws-bedrock-prompts",
-          "title": "Prompt Engineering with Amazon Bedrock",
           "description": "Advanced prompting techniques using Amazon Bedrock models",
-          "url": "https://www.youtube.com/watch?v=aws-example2",
           "duration": "25:10",
+          "id": "aws-bedrock-prompts",
+          "order": 2,
           "thumbnailUrl": "https://img.youtube.com/vi/aws-example2/maxresdefault.jpg",
-          "order": 2
-        }
-      ],
-      "codeExamples": [
-        {
-          "id": "aws-bedrock-prompt",
-          "title": "AWS Bedrock Prompt Example",
-          "description": "Example of crafting effective prompts for AWS Bedrock",
-          "language": "python",
-          "code": "import boto3\n\n# Initialize Bedrock client\nbedrock = boto3.client('bedrock-runtime')\n\n# Effective prompt for AWS service recommendations\nprompt = \"\"\"\nYou are an AWS Solutions Architect. A customer needs to build a serverless web application.\n\nProvide a detailed recommendation including:\n1. AWS services to use (Lambda, API Gateway, DynamoDB, etc.)\n2. Architecture diagram description\n3. Cost optimization tips\n4. Security best practices\n\nCustomer requirements:\n- Handle 10,000 concurrent users\n- Global deployment\n- Real-time data processing\n- Cost-effective solution\n\"\"\"\n\n# Use the prompt with Bedrock\nresponse = bedrock.invoke_model(\n    modelId='anthropic.claude-3-sonnet-20240229-v1:0',\n    body=json.dumps({\n        'prompt': prompt,\n        'max_tokens_to_sample': 2000\n    })\n)",
-          "downloadUrl": "https://example.com/download/aws-bedrock-prompt.py",
-          "fileName": "aws_bedrock_prompt_example.py"
+          "title": "Prompt Engineering with Amazon Bedrock",
+          "url": "https://www.youtube.com/watch?v=aws-example2"
         }
       ]
     },
     {
-      "id": 3,
-      "title": "Introduction to LangGraph",
-      "provider": "LANGCHAIN ACADEMY",
-      "instructor": "Harrison Chase",
-      "duration": "9 Hours",
-      "description": "Build stateful, graph-based AI agents with LangGraph for complex workflows.",
       "color": "#3700B3",
-      "topics": [
-        "LangGraph",
-        "State Management",
-        "Graph Architecture",
-        "Workflows"
-      ],
-      "ollamaPrompt": "You are a LangGraph specialist. Explain how to build graph-based agent workflows and manage complex state transitions.",
+      "description": "Build stateful, graph-based AI agents with LangGraph for complex workflows.",
+      "duration": "9 Hours",
+      "id": 3,
+      "instructor": "Harrison Chase",
       "model": "codellama",
       "modelType": "CODELLAMA",
+      "ollamaPrompt": "You are a LangGraph specialist. Explain how to build graph-based agent workflows and manage complex state transitions.",
+      "provider": "LANGCHAIN ACADEMY",
       "samplePrompts": [
         "How do I create a simple graph workflow in LangGraph?",
         "Explain state management in graph-based agents",
         "What are the advantages of LangGraph over linear chains?"
       ],
       "setupInstructions": "This agent uses CodeLlama for code-focused LangGraph discussions. Install 'codellama' model in Ollama. The agent specializes in graph architecture and stateful agent design.",
-      "supportsStreaming": true
+      "supportsStreaming": true,
+      "title": "Introduction to LangGraph",
+      "topics": [
+        "LangGraph",
+        "State Management",
+        "Graph Architecture",
+        "Workflows"
+      ]
     },
     {
-      "id": 4,
-      "title": "Large Language Model Agents MOOC",
-      "provider": "AGENTICAI-LEARNING.ORG",
-      "instructor": "Dawn Song",
-      "duration": "4 Hours 40 Minutes",
-      "description": "Comprehensive course on LLM agent fundamentals and advanced capabilities.",
       "color": "#BB86FC",
-      "topics": [
-        "LLM Fundamentals",
-        "Agent Design",
-        "Capabilities",
-        "Limitations"
-      ],
-      "ollamaPrompt": "You are an LLM agent educator. Teach core concepts of how language models can act as intelligent agents.",
+      "description": "Comprehensive course on LLM agent fundamentals and advanced capabilities.",
+      "duration": "4 Hours 40 Minutes",
+      "id": 4,
+      "instructor": "Dawn Song",
       "model": "llama2",
       "modelType": "LLAMA2",
+      "ollamaPrompt": "You are an LLM agent educator. Teach core concepts of how language models can act as intelligent agents.",
+      "provider": "AGENTICAI-LEARNING.ORG",
       "samplePrompts": [
         "What are the fundamental capabilities of LLM agents?",
         "How do LLMs differ from traditional AI agents?",
         "What are the current limitations of LLM-based agents?"
       ],
       "setupInstructions": "This agent uses Llama 2 for educational discussions about LLM agents. Install 'llama2' model in Ollama. The agent covers both fundamentals and advanced agent concepts.",
-      "supportsStreaming": true
+      "supportsStreaming": true,
+      "title": "Large Language Model Agents MOOC",
+      "topics": [
+        "LLM Fundamentals",
+        "Agent Design",
+        "Capabilities",
+        "Limitations"
+      ]
     },
     {
-      "id": 5,
-      "title": "Building AI Agents in LangGraph",
-      "provider": "DEEPLEARNING AI",
-      "instructor": "Harrison Chase",
-      "duration": "1 Hour 32 Minutes",
-      "description": "Practical guide to implementing AI agents using LangGraph framework.",
       "color": "#CF6679",
-      "topics": [
-        "LangGraph Implementation",
-        "Practical Examples",
-        "Agent Patterns",
-        "Integration"
-      ],
-      "ollamaPrompt": "You are a LangGraph implementation expert. Show users how to build practical AI agents with real-world applications.",
+      "description": "Practical guide to implementing AI agents using LangGraph framework.",
+      "duration": "1 Hour 32 Minutes",
+      "id": 5,
+      "instructor": "Harrison Chase",
       "model": "codellama",
       "modelType": "CODELLAMA",
+      "ollamaPrompt": "You are a LangGraph implementation expert. Show users how to build practical AI agents with real-world applications.",
+      "provider": "DEEPLEARNING AI",
       "samplePrompts": [
         "Show me how to implement a simple agent in LangGraph",
         "What are common agent patterns in LangGraph?",
         "How do I integrate LangGraph with external APIs?"
       ],
       "setupInstructions": "This agent uses CodeLlama for practical LangGraph implementation guidance. Install 'codellama' model in Ollama. The agent focuses on real-world agent building and integration.",
-      "supportsStreaming": true
+      "supportsStreaming": true,
+      "title": "Building AI Agents in LangGraph",
+      "topics": [
+        "LangGraph Implementation",
+        "Practical Examples",
+        "Agent Patterns",
+        "Integration"
+      ]
     },
     {
-      "id": 6,
-      "title": "Building RAG Agents with LLMs",
-      "provider": "LEARN NVIDIA",
-      "instructor": "Nvidia Team",
-      "duration": "9 Hours",
-      "description": "Master Retrieval-Augmented Generation (RAG) with NVIDIA's advanced techniques.",
       "color": "#03A9F4",
-      "topics": [
-        "RAG Architecture",
-        "Vector Databases",
-        "Retrieval Systems",
-        "NVIDIA Tools"
-      ],
-      "ollamaPrompt": "You are a RAG specialist. Explain how to build retrieval-augmented generation systems for grounded AI responses.",
+      "description": "Master Retrieval-Augmented Generation (RAG) with NVIDIA's advanced techniques.",
+      "duration": "9 Hours",
+      "id": 6,
+      "instructor": "Nvidia Team",
       "model": "mistral",
       "modelType": "MISTRAL",
+      "ollamaPrompt": "You are a RAG specialist. Explain how to build retrieval-augmented generation systems for grounded AI responses.",
+      "provider": "LEARN NVIDIA",
       "samplePrompts": [
         "How does RAG improve LLM responses?",
         "What vector databases work best with RAG?",
         "Explain the retrieval process in RAG systems"
       ],
       "setupInstructions": "This agent uses Mistral for RAG system discussions. Install 'mistral' model in Ollama. The agent covers NVIDIA tools and advanced RAG techniques.",
-      "supportsStreaming": true
+      "supportsStreaming": true,
+      "title": "Building RAG Agents with LLMs",
+      "topics": [
+        "RAG Architecture",
+        "Vector Databases",
+        "Retrieval Systems",
+        "NVIDIA Tools"
+      ]
     },
     {
-      "id": 7,
-      "title": "AI Agentic Design Patterns with AutoGen",
-      "provider": "DEEPLEARNING AI",
-      "instructor": "Chi Wang",
-      "duration": "1 Hour 26 Minutes",
-      "description": "Explore design patterns for building robust multi-agent systems with AutoGen.",
       "color": "#4CAF50",
-      "topics": [
-        "AutoGen Framework",
-        "Design Patterns",
-        "Multi-Agent",
-        "Architecture"
-      ],
-      "ollamaPrompt": "You are an AutoGen expert. Guide users through agentic design patterns and multi-agent orchestration.",
+      "description": "Explore design patterns for building robust multi-agent systems with AutoGen.",
+      "duration": "1 Hour 26 Minutes",
+      "id": 7,
+      "instructor": "Chi Wang",
       "model": "llama2",
       "modelType": "LLAMA2",
+      "ollamaPrompt": "You are an AutoGen expert. Guide users through agentic design patterns and multi-agent orchestration.",
+      "provider": "DEEPLEARNING AI",
       "samplePrompts": [
         "What are the main design patterns in AutoGen?",
         "How do I orchestrate multiple agents in AutoGen?",
         "Show me an example of a robust multi-agent system"
       ],
       "setupInstructions": "This agent uses Llama 2 for AutoGen framework discussions. Install 'llama2' model in Ollama. The agent specializes in design patterns and multi-agent architecture.",
-      "supportsStreaming": true
+      "supportsStreaming": true,
+      "title": "AI Agentic Design Patterns with AutoGen",
+      "topics": [
+        "AutoGen Framework",
+        "Design Patterns",
+        "Multi-Agent",
+        "Architecture"
+      ]
     },
     {
-      "id": 8,
-      "title": "LLMs as Operating Systems: Agent Memory",
-      "provider": "DEEPLEARNING AI",
-      "instructor": "Charles Packer",
-      "duration": "1 Hour 22 Minutes",
-      "description": "Deep dive into agent memory systems and how LLMs manage context.",
       "color": "#FF9800",
-      "topics": [
-        "Memory Systems",
-        "Context Management",
-        "Long-term Memory",
-        "Agent State"
-      ],
-      "ollamaPrompt": "You are an agent memory expert. Explain how AI agents maintain and utilize memory for coherent interactions.",
+      "description": "Deep dive into agent memory systems and how LLMs manage context.",
+      "duration": "1 Hour 22 Minutes",
+      "id": 8,
+      "instructor": "Charles Packer",
       "model": "neural-chat",
       "modelType": "NEURAL_CHAT",
+      "ollamaPrompt": "You are an agent memory expert. Explain how AI agents maintain and utilize memory for coherent interactions.",
+      "provider": "DEEPLEARNING AI",
       "samplePrompts": [
         "How do LLMs maintain context in conversations?",
         "What are different types of agent memory?",
         "Explain long-term memory in AI agents"
       ],
       "setupInstructions": "This agent uses Neural Chat for memory system discussions. Install 'neural-chat' model in Ollama. The agent focuses on context management and memory architectures.",
-      "supportsStreaming": true
+      "supportsStreaming": true,
+      "title": "LLMs as Operating Systems: Agent Memory",
+      "topics": [
+        "Memory Systems",
+        "Context Management",
+        "Long-term Memory",
+        "Agent State"
+      ]
     },
     {
-      "id": 9,
-      "title": "Building Agentic RAG with LlamaIndex",
-      "provider": "DEEPLEARNING AI",
-      "instructor": "Jerry Liu",
-      "duration": "44 Minutes",
-      "description": "Build advanced RAG systems with agentic capabilities using LlamaIndex.",
       "color": "#9C27B0",
-      "topics": [
-        "LlamaIndex",
-        "Agentic RAG",
-        "Query Engines",
-        "Document Processing"
-      ],
-      "ollamaPrompt": "You are a LlamaIndex specialist. Show users how to build intelligent RAG systems with agentic behaviors.",
+      "description": "Build advanced RAG systems with agentic capabilities using LlamaIndex.",
+      "duration": "44 Minutes",
+      "id": 9,
+      "instructor": "Jerry Liu",
       "model": "mistral",
       "modelType": "MISTRAL",
+      "ollamaPrompt": "You are a LlamaIndex specialist. Show users how to build intelligent RAG systems with agentic behaviors.",
+      "provider": "DEEPLEARNING AI",
       "samplePrompts": [
         "How do I build agentic RAG with LlamaIndex?",
         "What are query engines in LlamaIndex?",
         "Explain document processing in RAG systems"
       ],
       "setupInstructions": "This agent uses Mistral for LlamaIndex discussions. Install 'mistral' model in Ollama. The agent covers agentic RAG patterns and advanced query techniques.",
-      "supportsStreaming": true
+      "supportsStreaming": true,
+      "title": "Building Agentic RAG with LlamaIndex",
+      "topics": [
+        "LlamaIndex",
+        "Agentic RAG",
+        "Query Engines",
+        "Document Processing"
+      ]
     }
   ],
+  "cart": {
+    "userId1": {
+      "items": [
+        {
+          "added_at": "2025-01-01T00:00:00Z",
+          "agent_id": 2,
+          "currency": "USD",
+          "price": 29.99,
+          "quantity": 1
+        }
+      ]
+    }
+  },
+  "conversations": {
+    "convId1": {
+      "agent_id": 1,
+      "is_active": true,
+      "last_message_at": "2025-01-01T00:00:00Z",
+      "messages": [
+        {
+          "content": "Hello, can you explain multi-agent systems?",
+          "content_type": "text",
+          "created_at": "2025-01-01T00:00:00Z",
+          "sender_type": "user"
+        },
+        {
+          "content": "Multi-agent systems involve multiple AI agents working together...",
+          "content_type": "text",
+          "created_at": "2025-01-01T00:00:05Z",
+          "sender_type": "agent",
+          "tokens_used": 150
+        }
+      ],
+      "model_used": "llama2",
+      "title": "First Conversation",
+      "total_messages": 5,
+      "user_id": "userId1"
+    }
+  },
   "schema": {
     "agents": {
-      "type": "array",
       "items": {
-        "type": "object",
         "properties": {
-          "id": {
-            "type": "integer",
-            "description": "Unique identifier for the agent"
-          },
-          "title": {
-            "type": "string",
-            "description": "Title of the course/agent"
-          },
-          "provider": {
-            "type": "string",
-            "description": "Provider or organization offering the course"
-          },
-          "instructor": {
-            "type": "string",
-            "description": "Instructor or author of the course"
-          },
-          "duration": {
-            "type": "string",
-            "description": "Duration of the course"
+          "color": {
+            "description": "Hex color code for UI theming",
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "description": "Detailed description of the course"
+            "description": "Detailed description of the course",
+            "type": "string"
           },
-          "color": {
-            "type": "string",
-            "description": "Hex color code for UI theming"
+          "duration": {
+            "description": "Duration of the course",
+            "type": "string"
           },
-          "topics": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "List of topics covered in the course"
+          "id": {
+            "description": "Unique identifier for the agent",
+            "type": "integer"
           },
-          "ollamaPrompt": {
-            "type": "string",
-            "description": "Prompt for Ollama AI interactions"
+          "instructor": {
+            "description": "Instructor or author of the course",
+            "type": "string"
           },
           "model": {
-            "type": "string",
-            "description": "Recommended Ollama model for the agent"
+            "description": "Recommended Ollama model for the agent",
+            "type": "string"
           },
           "modelType": {
-            "type": "string",
             "description": "OllamaModel enum value for the agent",
             "enum": [
               "LLAMA2",
@@ -356,22 +405,42 @@
               "NEURAL_CHAT",
               "VICUNA",
               "ORCA_MINI"
-            ]
+            ],
+            "type": "string"
+          },
+          "ollamaPrompt": {
+            "description": "Prompt for Ollama AI interactions",
+            "type": "string"
+          },
+          "provider": {
+            "description": "Provider or organization offering the course",
+            "type": "string"
           },
           "samplePrompts": {
-            "type": "array",
+            "description": "Sample prompts for the agent",
             "items": {
               "type": "string"
             },
-            "description": "Sample prompts for the agent"
+            "type": "array"
           },
           "setupInstructions": {
-            "type": "string",
-            "description": "Setup instructions for the Ollama model"
+            "description": "Setup instructions for the Ollama model",
+            "type": "string"
           },
           "supportsStreaming": {
-            "type": "boolean",
-            "description": "Whether the model supports streaming responses"
+            "description": "Whether the model supports streaming responses",
+            "type": "boolean"
+          },
+          "title": {
+            "description": "Title of the course/agent",
+            "type": "string"
+          },
+          "topics": {
+            "description": "List of topics covered in the course",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
           }
         },
         "required": [
@@ -389,7 +458,1011 @@
           "samplePrompts",
           "setupInstructions",
           "supportsStreaming"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    }
+  },
+  "tables": [
+    {
+      "columns": [
+        {
+          "name": "id",
+          "nullable": false,
+          "onDelete": "CASCADE",
+          "primaryKey": true,
+          "references": "auth.users(id)",
+          "type": "UUID"
+        },
+        {
+          "name": "email",
+          "nullable": true,
+          "type": "TEXT"
+        },
+        {
+          "name": "full_name",
+          "nullable": true,
+          "type": "TEXT"
+        },
+        {
+          "name": "avatar_url",
+          "nullable": true,
+          "type": "TEXT"
+        },
+        {
+          "default": "NOW()",
+          "name": "created_at",
+          "nullable": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "default": "NOW()",
+          "name": "updated_at",
+          "nullable": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "description": "User profile data linked to Supabase Auth users",
+      "name": "profiles",
+      "policies": [
+        {
+          "name": "Users can view their own profile",
+          "operation": "SELECT",
+          "using": "auth.uid() = id"
+        },
+        {
+          "name": "Users can update their own profile",
+          "operation": "UPDATE",
+          "using": "auth.uid() = id"
+        },
+        {
+          "name": "Users can insert their own profile",
+          "operation": "INSERT",
+          "withCheck": "auth.uid() = id"
+        }
+      ],
+      "rlsEnabled": true,
+      "triggers": [
+        {
+          "event": "BEFORE UPDATE",
+          "function": "public.handle_updated_at()",
+          "name": "on_profile_updated"
+        }
+      ]
+    },
+    {
+      "columns": [
+        {
+          "default": "gen_random_uuid()",
+          "name": "id",
+          "nullable": false,
+          "primaryKey": true,
+          "type": "UUID"
+        },
+        {
+          "name": "user_id",
+          "nullable": false,
+          "onDelete": "CASCADE",
+          "references": "public.profiles(id)",
+          "type": "UUID"
+        },
+        {
+          "name": "agent_id",
+          "nullable": false,
+          "type": "INTEGER"
+        },
+        {
+          "default": false,
+          "name": "completed",
+          "nullable": false,
+          "type": "BOOLEAN"
+        },
+        {
+          "check": "progress_percentage >= 0 AND progress_percentage <= 100",
+          "default": 0,
+          "name": "progress_percentage",
+          "nullable": false,
+          "type": "INTEGER"
+        },
+        {
+          "default": "NOW()",
+          "name": "last_accessed",
+          "nullable": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "name": "notes",
+          "nullable": true,
+          "type": "TEXT"
+        },
+        {
+          "default": "NOW()",
+          "name": "created_at",
+          "nullable": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "default": "NOW()",
+          "name": "updated_at",
+          "nullable": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "description": "Tracks per-user learning progress for each agent",
+      "name": "agent_progress",
+      "policies": [
+        {
+          "name": "Users can view their own progress",
+          "operation": "SELECT",
+          "using": "auth.uid() = user_id"
+        },
+        {
+          "name": "Users can insert their own progress",
+          "operation": "INSERT",
+          "withCheck": "auth.uid() = user_id"
+        },
+        {
+          "name": "Users can update their own progress",
+          "operation": "UPDATE",
+          "using": "auth.uid() = user_id"
+        },
+        {
+          "name": "Users can delete their own progress",
+          "operation": "DELETE",
+          "using": "auth.uid() = user_id"
+        }
+      ],
+      "rlsEnabled": true,
+      "triggers": [
+        {
+          "event": "BEFORE UPDATE",
+          "function": "public.handle_updated_at()",
+          "name": "on_progress_updated"
+        }
+      ],
+      "uniqueConstraints": [
+        [
+          "user_id",
+          "agent_id"
         ]
+      ]
+    },
+    {
+      "columns": [
+        {
+          "default": "gen_random_uuid()",
+          "name": "id",
+          "nullable": false,
+          "primaryKey": true,
+          "type": "UUID"
+        },
+        {
+          "name": "user_id",
+          "nullable": false,
+          "onDelete": "CASCADE",
+          "references": "public.profiles(id)",
+          "type": "UUID"
+        },
+        {
+          "name": "agent_id",
+          "nullable": false,
+          "type": "INTEGER"
+        },
+        {
+          "name": "title",
+          "nullable": true,
+          "type": "TEXT"
+        },
+        {
+          "name": "model_used",
+          "nullable": true,
+          "type": "TEXT"
+        },
+        {
+          "default": true,
+          "name": "is_active",
+          "nullable": false,
+          "type": "BOOLEAN"
+        },
+        {
+          "default": 0,
+          "name": "total_messages",
+          "nullable": false,
+          "type": "INTEGER"
+        },
+        {
+          "default": "NOW()",
+          "name": "last_message_at",
+          "nullable": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "default": "NOW()",
+          "name": "created_at",
+          "nullable": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "default": "NOW()",
+          "name": "updated_at",
+          "nullable": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "description": "Stores chat conversations between users and AI agents",
+      "name": "chat_conversations",
+      "policies": [
+        {
+          "name": "Users can view their own conversations",
+          "operation": "SELECT",
+          "using": "auth.uid() = user_id"
+        },
+        {
+          "name": "Users can create their own conversations",
+          "operation": "INSERT",
+          "withCheck": "auth.uid() = user_id"
+        },
+        {
+          "name": "Users can update their own conversations",
+          "operation": "UPDATE",
+          "using": "auth.uid() = user_id"
+        },
+        {
+          "name": "Users can delete their own conversations",
+          "operation": "DELETE",
+          "using": "auth.uid() = user_id"
+        }
+      ],
+      "rlsEnabled": true,
+      "triggers": [
+        {
+          "event": "BEFORE UPDATE",
+          "function": "public.handle_updated_at()",
+          "name": "on_conversation_updated"
+        }
+      ]
+    },
+    {
+      "columns": [
+        {
+          "default": "gen_random_uuid()",
+          "name": "id",
+          "nullable": false,
+          "primaryKey": true,
+          "type": "UUID"
+        },
+        {
+          "name": "conversation_id",
+          "nullable": false,
+          "onDelete": "CASCADE",
+          "references": "public.chat_conversations(id)",
+          "type": "UUID"
+        },
+        {
+          "check": "sender_type IN ('user', 'agent', 'system')",
+          "name": "sender_type",
+          "nullable": false,
+          "type": "TEXT"
+        },
+        {
+          "name": "content",
+          "nullable": false,
+          "type": "TEXT"
+        },
+        {
+          "check": "content_type IN ('text', 'code', 'image', 'file')",
+          "default": "text",
+          "name": "content_type",
+          "nullable": false,
+          "type": "TEXT"
+        },
+        {
+          "name": "metadata",
+          "nullable": true,
+          "type": "JSONB"
+        },
+        {
+          "name": "tokens_used",
+          "nullable": true,
+          "type": "INTEGER"
+        },
+        {
+          "default": false,
+          "name": "is_streaming",
+          "nullable": false,
+          "type": "BOOLEAN"
+        },
+        {
+          "default": "NOW()",
+          "name": "created_at",
+          "nullable": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "description": "Individual messages within chat conversations",
+      "indexes": [
+        {
+          "columns": [
+            "conversation_id"
+          ],
+          "name": "idx_chat_messages_conversation_id"
+        },
+        {
+          "columns": [
+            "created_at"
+          ],
+          "name": "idx_chat_messages_created_at"
+        }
+      ],
+      "name": "chat_messages",
+      "policies": [
+        {
+          "name": "Users can view messages from their conversations",
+          "operation": "SELECT",
+          "using": "auth.uid() = (SELECT user_id FROM public.chat_conversations WHERE id = conversation_id)"
+        },
+        {
+          "name": "Users can insert messages to their conversations",
+          "operation": "INSERT",
+          "withCheck": "auth.uid() = (SELECT user_id FROM public.chat_conversations WHERE id = conversation_id)"
+        }
+      ],
+      "rlsEnabled": true
+    },
+    {
+      "columns": [
+        {
+          "default": "gen_random_uuid()",
+          "name": "id",
+          "nullable": false,
+          "primaryKey": true,
+          "type": "UUID"
+        },
+        {
+          "name": "user_id",
+          "nullable": false,
+          "onDelete": "CASCADE",
+          "references": "public.profiles(id)",
+          "type": "UUID"
+        },
+        {
+          "name": "agent_id",
+          "nullable": false,
+          "type": "INTEGER"
+        },
+        {
+          "check": "quantity > 0",
+          "default": 1,
+          "name": "quantity",
+          "nullable": false,
+          "type": "INTEGER"
+        },
+        {
+          "name": "price",
+          "nullable": true,
+          "type": "DECIMAL(10,2)"
+        },
+        {
+          "default": "USD",
+          "name": "currency",
+          "nullable": false,
+          "type": "TEXT"
+        },
+        {
+          "default": "NOW()",
+          "name": "added_at",
+          "nullable": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "default": "NOW()",
+          "name": "updated_at",
+          "nullable": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "description": "Shopping cart items for users",
+      "name": "cart_items",
+      "policies": [
+        {
+          "name": "Users can view their own cart items",
+          "operation": "SELECT",
+          "using": "auth.uid() = user_id"
+        },
+        {
+          "name": "Users can manage their own cart items",
+          "operation": "ALL",
+          "using": "auth.uid() = user_id"
+        }
+      ],
+      "rlsEnabled": true,
+      "triggers": [
+        {
+          "event": "BEFORE UPDATE",
+          "function": "public.handle_updated_at()",
+          "name": "on_cart_item_updated"
+        }
+      ],
+      "uniqueConstraints": [
+        [
+          "user_id",
+          "agent_id"
+        ]
+      ]
+    },
+    {
+      "columns": [
+        {
+          "default": "gen_random_uuid()",
+          "name": "id",
+          "nullable": false,
+          "primaryKey": true,
+          "type": "UUID"
+        },
+        {
+          "name": "user_id",
+          "nullable": false,
+          "onDelete": "CASCADE",
+          "references": "public.profiles(id)",
+          "type": "UUID"
+        },
+        {
+          "check": "type IN ('info', 'warning', 'error', 'success', 'achievement', 'reminder')",
+          "name": "type",
+          "nullable": false,
+          "type": "TEXT"
+        },
+        {
+          "name": "title",
+          "nullable": false,
+          "type": "TEXT"
+        },
+        {
+          "name": "message",
+          "nullable": false,
+          "type": "TEXT"
+        },
+        {
+          "name": "data",
+          "nullable": true,
+          "type": "JSONB"
+        },
+        {
+          "default": false,
+          "name": "is_read",
+          "nullable": false,
+          "type": "BOOLEAN"
+        },
+        {
+          "name": "read_at",
+          "nullable": true,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "name": "expires_at",
+          "nullable": true,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "default": "NOW()",
+          "name": "created_at",
+          "nullable": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "description": "User notifications and alerts",
+      "indexes": [
+        {
+          "columns": [
+            "user_id"
+          ],
+          "name": "idx_notifications_user_id"
+        },
+        {
+          "columns": [
+            "is_read"
+          ],
+          "name": "idx_notifications_is_read"
+        },
+        {
+          "columns": [
+            "created_at"
+          ],
+          "name": "idx_notifications_created_at"
+        }
+      ],
+      "name": "user_notifications",
+      "policies": [
+        {
+          "name": "Users can view their own notifications",
+          "operation": "SELECT",
+          "using": "auth.uid() = user_id"
+        },
+        {
+          "name": "Users can update their own notifications",
+          "operation": "UPDATE",
+          "using": "auth.uid() = user_id"
+        }
+      ],
+      "rlsEnabled": true
+    },
+    {
+      "columns": [
+        {
+          "default": "gen_random_uuid()",
+          "name": "id",
+          "nullable": false,
+          "primaryKey": true,
+          "type": "UUID"
+        },
+        {
+          "name": "user_id",
+          "nullable": false,
+          "onDelete": "CASCADE",
+          "references": "public.profiles(id)",
+          "type": "UUID"
+        },
+        {
+          "check": "theme IN ('light', 'dark', 'system')",
+          "default": "system",
+          "name": "theme",
+          "nullable": false,
+          "type": "TEXT"
+        },
+        {
+          "default": "en",
+          "name": "language",
+          "nullable": false,
+          "type": "TEXT"
+        },
+        {
+          "default": true,
+          "name": "notifications_enabled",
+          "nullable": false,
+          "type": "BOOLEAN"
+        },
+        {
+          "default": true,
+          "name": "auto_save_conversations",
+          "nullable": false,
+          "type": "BOOLEAN"
+        },
+        {
+          "default": "llama2",
+          "name": "default_model",
+          "nullable": false,
+          "type": "TEXT"
+        },
+        {
+          "default": true,
+          "name": "streaming_enabled",
+          "nullable": false,
+          "type": "BOOLEAN"
+        },
+        {
+          "check": "max_tokens > 0",
+          "default": 2048,
+          "name": "max_tokens",
+          "nullable": false,
+          "type": "INTEGER"
+        },
+        {
+          "name": "custom_settings",
+          "nullable": true,
+          "type": "JSONB"
+        },
+        {
+          "default": "NOW()",
+          "name": "created_at",
+          "nullable": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "default": "NOW()",
+          "name": "updated_at",
+          "nullable": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "description": "User preferences and settings",
+      "name": "user_settings",
+      "policies": [
+        {
+          "name": "Users can view their own settings",
+          "operation": "SELECT",
+          "using": "auth.uid() = user_id"
+        },
+        {
+          "name": "Users can manage their own settings",
+          "operation": "ALL",
+          "using": "auth.uid() = user_id"
+        }
+      ],
+      "rlsEnabled": true,
+      "triggers": [
+        {
+          "event": "BEFORE UPDATE",
+          "function": "public.handle_updated_at()",
+          "name": "on_settings_updated"
+        }
+      ],
+      "uniqueConstraints": [
+        [
+          "user_id"
+        ]
+      ]
+    },
+    {
+      "columns": [
+        {
+          "default": "gen_random_uuid()",
+          "name": "id",
+          "nullable": false,
+          "primaryKey": true,
+          "type": "UUID"
+        },
+        {
+          "name": "user_id",
+          "nullable": false,
+          "onDelete": "CASCADE",
+          "references": "public.profiles(id)",
+          "type": "UUID"
+        },
+        {
+          "name": "agent_id",
+          "nullable": false,
+          "type": "INTEGER"
+        },
+        {
+          "check": "bookmark_type IN ('favorite', 'watch_later', 'completed')",
+          "default": "favorite",
+          "name": "bookmark_type",
+          "nullable": false,
+          "type": "TEXT"
+        },
+        {
+          "name": "notes",
+          "nullable": true,
+          "type": "TEXT"
+        },
+        {
+          "default": "NOW()",
+          "name": "created_at",
+          "nullable": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "description": "User bookmarks and favorites",
+      "name": "user_bookmarks",
+      "policies": [
+        {
+          "name": "Users can view their own bookmarks",
+          "operation": "SELECT",
+          "using": "auth.uid() = user_id"
+        },
+        {
+          "name": "Users can manage their own bookmarks",
+          "operation": "ALL",
+          "using": "auth.uid() = user_id"
+        }
+      ],
+      "rlsEnabled": true,
+      "uniqueConstraints": [
+        [
+          "user_id",
+          "agent_id"
+        ]
+      ]
+    },
+    {
+      "columns": [
+        {
+          "default": "gen_random_uuid()",
+          "name": "id",
+          "nullable": false,
+          "primaryKey": true,
+          "type": "UUID"
+        },
+        {
+          "name": "user_id",
+          "nullable": false,
+          "onDelete": "CASCADE",
+          "references": "public.profiles(id)",
+          "type": "UUID"
+        },
+        {
+          "name": "agent_id",
+          "nullable": false,
+          "type": "INTEGER"
+        },
+        {
+          "check": "rating >= 1 AND rating <= 5",
+          "name": "rating",
+          "nullable": false,
+          "type": "INTEGER"
+        },
+        {
+          "name": "review",
+          "nullable": true,
+          "type": "TEXT"
+        },
+        {
+          "default": 0,
+          "name": "helpful_votes",
+          "nullable": false,
+          "type": "INTEGER"
+        },
+        {
+          "default": "NOW()",
+          "name": "created_at",
+          "nullable": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "default": "NOW()",
+          "name": "updated_at",
+          "nullable": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "description": "User ratings and reviews for agents",
+      "indexes": [
+        {
+          "columns": [
+            "agent_id"
+          ],
+          "name": "idx_ratings_agent_id"
+        },
+        {
+          "columns": [
+            "rating"
+          ],
+          "name": "idx_ratings_rating"
+        }
+      ],
+      "name": "agent_ratings",
+      "policies": [
+        {
+          "name": "Users can view all ratings",
+          "operation": "SELECT",
+          "using": "true"
+        },
+        {
+          "name": "Users can manage their own ratings",
+          "operation": "ALL",
+          "using": "auth.uid() = user_id"
+        }
+      ],
+      "rlsEnabled": true,
+      "triggers": [
+        {
+          "event": "BEFORE UPDATE",
+          "function": "public.handle_updated_at()",
+          "name": "on_rating_updated"
+        }
+      ],
+      "uniqueConstraints": [
+        [
+          "user_id",
+          "agent_id"
+        ]
+      ]
+    },
+    {
+      "columns": [
+        {
+          "default": "gen_random_uuid()",
+          "name": "id",
+          "nullable": false,
+          "primaryKey": true,
+          "type": "UUID"
+        },
+        {
+          "name": "user_id",
+          "nullable": false,
+          "onDelete": "CASCADE",
+          "references": "public.profiles(id)",
+          "type": "UUID"
+        },
+        {
+          "check": "activity_type IN ('login', 'logout', 'chat_started', 'chat_ended', 'agent_accessed', 'course_completed', 'rating_submitted', 'bookmark_added', 'cart_updated')",
+          "name": "activity_type",
+          "nullable": false,
+          "type": "TEXT"
+        },
+        {
+          "check": "entity_type IN ('agent', 'conversation', 'course', 'profile', 'cart', 'notification')",
+          "name": "entity_type",
+          "nullable": true,
+          "type": "TEXT"
+        },
+        {
+          "name": "entity_id",
+          "nullable": true,
+          "type": "TEXT"
+        },
+        {
+          "name": "metadata",
+          "nullable": true,
+          "type": "JSONB"
+        },
+        {
+          "name": "ip_address",
+          "nullable": true,
+          "type": "INET"
+        },
+        {
+          "name": "user_agent",
+          "nullable": true,
+          "type": "TEXT"
+        },
+        {
+          "default": "NOW()",
+          "name": "created_at",
+          "nullable": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "description": "User activity and engagement tracking",
+      "indexes": [
+        {
+          "columns": [
+            "user_id"
+          ],
+          "name": "idx_activity_user_id"
+        },
+        {
+          "columns": [
+            "activity_type"
+          ],
+          "name": "idx_activity_type"
+        },
+        {
+          "columns": [
+            "created_at"
+          ],
+          "name": "idx_activity_created_at"
+        }
+      ],
+      "name": "user_activity_logs",
+      "policies": [
+        {
+          "name": "Users can view their own activity logs",
+          "operation": "SELECT",
+          "using": "auth.uid() = user_id"
+        },
+        {
+          "name": "System can insert activity logs",
+          "operation": "INSERT",
+          "using": "true"
+        }
+      ],
+      "rlsEnabled": true
+    },
+    {
+      "columns": [
+        {
+          "default": "gen_random_uuid()",
+          "name": "id",
+          "nullable": false,
+          "primaryKey": true,
+          "type": "UUID"
+        },
+        {
+          "name": "user_id",
+          "nullable": false,
+          "onDelete": "CASCADE",
+          "references": "public.profiles(id)",
+          "type": "UUID"
+        },
+        {
+          "name": "session_token",
+          "nullable": false,
+          "type": "TEXT"
+        },
+        {
+          "name": "device_info",
+          "nullable": true,
+          "type": "JSONB"
+        },
+        {
+          "name": "ip_address",
+          "nullable": true,
+          "type": "INET"
+        },
+        {
+          "name": "user_agent",
+          "nullable": true,
+          "type": "TEXT"
+        },
+        {
+          "default": true,
+          "name": "is_active",
+          "nullable": false,
+          "type": "BOOLEAN"
+        },
+        {
+          "name": "expires_at",
+          "nullable": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "default": "NOW()",
+          "name": "last_activity_at",
+          "nullable": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        {
+          "default": "NOW()",
+          "name": "created_at",
+          "nullable": false,
+          "type": "TIMESTAMP WITH TIME ZONE"
+        }
+      ],
+      "description": "User session management and device tracking",
+      "indexes": [
+        {
+          "columns": [
+            "user_id"
+          ],
+          "name": "idx_sessions_user_id"
+        },
+        {
+          "columns": [
+            "session_token"
+          ],
+          "name": "idx_sessions_token"
+        },
+        {
+          "columns": [
+            "expires_at"
+          ],
+          "name": "idx_sessions_expires_at"
+        }
+      ],
+      "name": "user_sessions",
+      "policies": [
+        {
+          "name": "Users can view their own sessions",
+          "operation": "SELECT",
+          "using": "auth.uid() = user_id"
+        },
+        {
+          "name": "System can manage sessions",
+          "operation": "ALL",
+          "using": "true"
+        }
+      ],
+      "rlsEnabled": true
+    }
+  ],
+  "users": {
+    "userId1": {
+      "bookmarks": [
+        {
+          "agent_id": 1,
+          "bookmark_type": "favorite",
+          "created_at": "2025-01-01T00:00:00Z",
+          "notes": "Great for learning AI basics"
+        }
+      ],
+      "profile": {
+        "avatar_url": "https://example.com/avatar.jpg",
+        "created_at": "2025-01-01T00:00:00Z",
+        "email": "user@example.com",
+        "full_name": "John Doe",
+        "id": "userId1",
+        "updated_at": "2025-01-01T00:00:00Z"
+      },
+      "settings": {
+        "auto_save_conversations": true,
+        "default_model": "llama2",
+        "language": "en",
+        "max_tokens": 2048,
+        "notifications_enabled": true,
+        "streaming_enabled": true,
+        "theme": "system"
       }
     }
   }

@@ -6,6 +6,7 @@ import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.playapp.aiagents.data.model.Agent
+import com.playapp.aiagents.data.model.Banner
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -16,6 +17,7 @@ class FirebaseService {
     private val TAG = "FirebaseService"
     private val database = FirebaseDatabase.getInstance()
     private val agentsRef = database.getReference("agents")
+    private val bannersRef = database.getReference("Banner")
 
     // Initialize all Firebase services
     val authService = FirebaseAuthService()
@@ -44,6 +46,29 @@ class FirebaseService {
         }
         agentsRef.addValueEventListener(listener)
         awaitClose { agentsRef.removeEventListener(listener) }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun getBanners(): Flow<List<Banner>> = callbackFlow {
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val banners = snapshot.children.mapNotNull { child ->
+                    try {
+                        child.getValue(Banner::class.java)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to map banner from snapshot: ${e.message}", e)
+                        null
+                    }
+                }
+                trySend(banners)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+        bannersRef.addValueEventListener(listener)
+        awaitClose { bannersRef.removeEventListener(listener) }
     }
 
     // Enhanced agent data with Firebase integration

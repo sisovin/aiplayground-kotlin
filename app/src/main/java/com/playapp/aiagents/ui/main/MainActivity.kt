@@ -616,78 +616,26 @@ fun DashboardScreen(
                 }
             }
 
-            // Top Bar with Bell Icon
+            // Book Icon with Top Bar
             item {
                 TopAppBar(
-                    title = { Text("AI Agents", fontWeight = FontWeight.Bold) },
+                    title = { Text("AI Playground", fontWeight = FontWeight.Bold) },
+                    navigationIcon = {
+                        IconButton(onClick = { /* Handle back navigation */ }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    },
                     actions = {
                         IconButton(onClick = { /* Handle notifications */ }) {
                             Icon(Icons.Filled.Notifications, contentDescription = "Notifications")
                         }
+                        IconButton(onClick = { /* Handle search */ }) {
+                            Icon(Icons.Filled.Search, contentDescription = "Search")
+                        }
                     }
                 )
             }
-
-            // Top Section
-            item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
-                ) {
-                    HorizontalPager(
-                        state = rememberPagerState(pageCount = { 5 }),
-                        modifier = Modifier.height(200.dp)
-                    ) { page ->
-                        val backgroundColor = when (page) {
-                            0 -> colorResource(R.color.agent_1)
-                            1 -> colorResource(R.color.agent_2)
-                            2 -> colorResource(R.color.agent_3)
-                            3 -> colorResource(R.color.agent_4)
-                            4 -> colorResource(R.color.agent_5)
-                            else -> colorResource(R.color.primary)
-                        }
-                        Card(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = backgroundColor)
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text(
-                                    text = "Learn How to Build AI Agent",
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "Start With These 9 Free Courses",
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    color = Color.White
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Row(
-                                    modifier = Modifier.padding(top = 8.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                                ) {
-                                    Chip("9 Agent Types")
-                                    Chip("Ollama Powered")
-                                    Chip("Interactive Learning")
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
+            
             // Course Grid Access - Full course browsing
             itemsIndexed(agents.take(kotlin.math.min(9, agents.size))) { index, agent ->
                 AnimatedVisibility(

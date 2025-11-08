@@ -8,5 +8,6 @@ class AiAgentsApplication : Application() {
         super.onCreate()
         // Initialize Firebase
         FirebaseApp.initializeApp(this)
+        println("AiAgentsApplication: Firebase initialized successfully")
     }
 }

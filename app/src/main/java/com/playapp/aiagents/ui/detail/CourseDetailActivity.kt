@@ -34,10 +34,9 @@ import com.playapp.aiagents.data.repository.ProgressRepository
 import com.playapp.aiagents.ui.viewmodel.AgentViewModel
 import com.playapp.aiagents.ui.video.VideoPlayerDialog
 import com.playapp.aiagents.ui.video.openVideoExternally
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.launch
+import com.google.firebase.auth.FirebaseAuth
 
 class CourseDetailActivity : ComponentActivity() {
     private val viewModel: AgentViewModel by viewModels {
@@ -129,13 +128,41 @@ fun CourseDetailScreen(
                 onClick = {
                     println("CourseDetailScreen: Start Chat clicked, courseId = $courseId")
                     println("CourseDetailScreen: activityContext = $activityContext")
-                    android.widget.Toast.makeText(activityContext, "Starting chat with agent $courseId", android.widget.Toast.LENGTH_SHORT).show()
-                    activityContext?.let {
-                        val intent = android.content.Intent(it, com.playapp.aiagents.ui.playground.PlaygroundActivity::class.java)
-                        intent.putExtra("agent_id", courseId)
-                        println("CourseDetailScreen: Starting PlaygroundActivity with agent_id = $courseId")
-                        it.startActivity(intent)
-                        println("CourseDetailScreen: startActivity called")
+
+                    // Check authentication and trial status like bottom navigation
+                    val currentUser = FirebaseAuth.getInstance().currentUser
+                    val isAuthenticated = currentUser != null
+                    val isWithinTrial = currentUser?.metadata?.creationTimestamp?.let { creationTime ->
+                        val thirtyDaysInMillis: Long = 30L * 24L * 60L * 60L * 1000L // 30 days in milliseconds
+                        val currentTime: Long = System.currentTimeMillis()
+                        (currentTime - creationTime) <= thirtyDaysInMillis
+                    } ?: false
+
+                    activityContext?.let { context ->
+                        if (isAuthenticated) {
+                            // Authenticated user - start chat with specific agent
+                            android.widget.Toast.makeText(context, "Starting chat with agent $courseId", android.widget.Toast.LENGTH_SHORT).show()
+                            val intent = android.content.Intent(context, com.playapp.aiagents.ui.playground.PlaygroundActivity::class.java)
+                            intent.putExtra("agent_id", courseId)
+                            println("CourseDetailScreen: Starting PlaygroundActivity with agent_id = $courseId")
+                            context.startActivity(intent)
+                        } else if (isWithinTrial) {
+                            // Trial user within 30 days - allow direct Playground access
+                            android.widget.Toast.makeText(context, "Starting chat with agent $courseId (Trial)", android.widget.Toast.LENGTH_SHORT).show()
+                            val intent = android.content.Intent(context, com.playapp.aiagents.ui.playground.PlaygroundActivity::class.java)
+                            intent.putExtra("agent_id", courseId)
+                            println("CourseDetailScreen: Starting PlaygroundActivity with agent_id = $courseId")
+                            context.startActivity(intent)
+                        } else {
+                            // Not authenticated and trial expired - redirect to sign in
+                            android.widget.Toast.makeText(
+                                context,
+                                "Please sign in to access the AI Playground. Trial users get 30 days free access!",
+                                android.widget.Toast.LENGTH_LONG
+                            ).show()
+                            val intent = android.content.Intent(context, com.playapp.aiagents.ui.auth.SigninActivity::class.java)
+                            context.startActivity(intent)
+                        }
                     }
                 },
                 icon = { Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = "Open Playground") },

@@ -15,7 +15,7 @@ data class Agent(
     val topics: List<String> = emptyList(),
     val ollamaPrompt: String = "",
     val model: String = "",
-    val modelType: OllamaModel = OllamaModel.LLAMA2,
+    val modelType: String = "LLAMA2",
     val samplePrompts: List<String> = emptyList(),
     val setupInstructions: String = "",
     val supportsStreaming: Boolean = true,

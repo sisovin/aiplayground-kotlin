@@ -14,13 +14,25 @@ class AgentViewModel(application: android.app.Application, private val repositor
     val agents: StateFlow<List<Agent>> = _agents
 
     init {
+        println("AgentViewModel: init called")
         loadAgents()
     }
 
-    private fun loadAgents() {
+    fun loadAgents() {
+        println("AgentViewModel: loadAgents called")
         viewModelScope.launch {
-            repository.getAgents(getApplication()).collect { agentList ->
-                _agents.value = agentList
+            try {
+                repository.getAgents(getApplication()).collect { agentList ->
+                    println("AgentViewModel: Received ${agentList.size} agents")
+                    agentList.forEach { agent ->
+                        println("AgentViewModel: Agent ${agent.id}: ${agent.title}")
+                    }
+                    _agents.value = agentList
+                    println("AgentViewModel: Updated agents state with ${agentList.size} agents")
+                }
+            } catch (e: Exception) {
+                println("AgentViewModel: Error loading agents: ${e.message}")
+                e.printStackTrace()
             }
         }
     }

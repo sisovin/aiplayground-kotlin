@@ -48,15 +48,11 @@ import com.playapp.aiagents.data.repository.AgentRepository
 import com.playapp.aiagents.data.repository.ProgressRepository
 import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.window.Dialog
-import kotlinx.coroutines.launch
-import androidx.lifecycle.lifecycleScope
-import com.playapp.aiagents.ui.video.VideoPlayerDialog
 import com.playapp.aiagents.ui.settings.SettingsActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import androidx.compose.ui.window.Dialog
+import com.playapp.aiagents.ui.video.VideoPlayerDialog
 
 class PlaygroundActivity : ComponentActivity() {
     private val viewModel: AgentViewModel by viewModels {
@@ -71,53 +67,83 @@ class PlaygroundActivity : ComponentActivity() {
         }
     }
 
-    private lateinit var chatRepository: ChatRepository
-    private lateinit var ollamaApiService: OllamaApiService
-    private lateinit var progressRepository: ProgressRepository
+    private var chatRepository: ChatRepository? = null
+    private var ollamaApiService: OllamaApiService? = null
+    private var progressRepository: ProgressRepository? = null
     private var startTime: Long = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         println("PlaygroundActivity: onCreate called")
-        val agentId = intent.getIntExtra("agent_id", -1)
 
-        // Debug logging
-        println("PlaygroundActivity: Received agent_id = $agentId")
+        try {
+            val agentId = intent.getIntExtra("agent_id", -1)
 
-        // Initialize services
-        chatRepository = ChatRepository(this)
-        progressRepository = ProgressRepository()
-        startTime = System.currentTimeMillis()
+            // Debug logging
+            println("PlaygroundActivity: Received agent_id = $agentId")
 
-        // Get Ollama server URL from preferences
-        val prefs = getSharedPreferences("aiagents_settings", Context.MODE_PRIVATE)
-        val ollamaServerUrl = prefs.getString("ollama_server_url", "http://10.0.2.2:11434") ?: "http://10.0.2.2:11434"
-        println("PlaygroundActivity: Using Ollama server URL: $ollamaServerUrl")
-        ollamaApiService = OllamaApiService(baseUrl = ollamaServerUrl)
+            // Check if ViewModel is initialized
+            println("PlaygroundActivity: ViewModel = $viewModel")
 
-        // Track agent usage
-        lifecycleScope.launch {
-            try {
-                progressRepository.updateAgentProgress("user_123", agentId, agentId,
-                    com.playapp.aiagents.data.model.AgentProgress(
-                        agentId = agentId,
-                        sessionsCount = 1, // Will be incremented properly later
-                        lastUsed = System.currentTimeMillis()
+            // Initialize services
+            println("PlaygroundActivity: Initializing ChatRepository...")
+            chatRepository = ChatRepository(this)
+            println("PlaygroundActivity: ChatRepository initialized")
+
+            progressRepository = ProgressRepository()
+            startTime = System.currentTimeMillis()
+
+            // Get Ollama server URL from preferences
+            val prefs = getSharedPreferences("aiagents_settings", Context.MODE_PRIVATE)
+            val ollamaServerUrl = prefs.getString("ollama_server_url", "http://10.0.2.2:11434") ?: "http://10.0.2.2:11434"
+            println("PlaygroundActivity: Using Ollama server URL: $ollamaServerUrl")
+            ollamaApiService = OllamaApiService(baseUrl = ollamaServerUrl)
+
+            // Track agent usage
+            lifecycleScope.launch {
+                try {
+                    progressRepository?.updateAgentProgress("user_123", agentId, agentId,
+                        com.playapp.aiagents.data.model.AgentProgress(
+                            agentId = agentId,
+                            sessionsCount = 1, // Will be incremented properly later
+                            lastUsed = System.currentTimeMillis()
+                        )
                     )
-                )
-                println("PlaygroundActivity: Agent progress updated for agent $agentId")
-            } catch (e: Exception) {
-                println("PlaygroundActivity: Error updating agent progress: ${e.message}")
-                // Handle error silently
-            }
-        }
-
-        setContent {
-            MaterialTheme {
-                PlaygroundScreen(viewModel, agentId, chatRepository, ollamaApiService, this, progressRepository) {
-                    finish() // Go back when back button is pressed
+                    println("PlaygroundActivity: Agent progress updated for agent $agentId")
+                } catch (e: Exception) {
+                    println("PlaygroundActivity: Error updating agent progress: ${e.message}")
+                    // Handle error silently
                 }
             }
+
+            println("PlaygroundActivity: About to call setContent")
+            setContent {
+                println("PlaygroundActivity: setContent called")
+                MaterialTheme {
+                    println("PlaygroundActivity: MaterialTheme applied")
+                    PlaygroundScreen(
+                        viewModel = viewModel,
+                        agentId = agentId,
+                        chatRepository = chatRepository,
+                        ollamaApiService = ollamaApiService,
+                        progressRepository = progressRepository,
+                        onNavigateToSettings = {
+                            val intent = Intent(this@PlaygroundActivity, SettingsActivity::class.java)
+                            startActivity(intent)
+                        },
+                        onBackPressed = {
+                            finish() // Go back when back button is pressed
+                        }
+                    )
+                }
+            }
+            println("PlaygroundActivity: setContent completed successfully")
+        } catch (e: Exception) {
+            println("PlaygroundActivity: Fatal error in onCreate: ${e.message}")
+            e.printStackTrace()
+            // Show error and finish activity
+            android.widget.Toast.makeText(this, "Failed to load playground: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+            finish()
         }
     }
 
@@ -134,7 +160,7 @@ class PlaygroundActivity : ComponentActivity() {
 
         lifecycleScope.launch {
             try {
-                progressRepository.addTimeSpent("user_123", agentId, timeSpent)
+                progressRepository?.addTimeSpent("user_123", agentId, timeSpent)
             } catch (e: Exception) {
                 // Handle error silently
             }
@@ -149,14 +175,95 @@ fun PlaygroundScreen(
     agentId: Int = -1,
     chatRepository: ChatRepository? = null,
     ollamaApiService: OllamaApiService? = null,
-    activityContext: android.content.Context? = null,
     progressRepository: ProgressRepository? = null,
+    onNavigateToSettings: () -> Unit = {},
     onBackPressed: () -> Unit = {}
 ) {
     val agents by viewModel.agents.collectAsState()
     val agent = agents.find { it.id == agentId }
 
-    // Tab state
+    println("PlaygroundScreen: agentId = $agentId, agents.size = ${agents.size}, agent = ${agent?.title ?: "null"}")
+    if (agent != null) {
+        println("PlaygroundScreen: Found agent: ${agent.title} (id: ${agent.id})")
+        println("PlaygroundScreen: Agent modelType: ${agent.modelType}")
+        println("PlaygroundScreen: Agent model: ${agent.model}")
+    } else {
+        println("PlaygroundScreen: Agent not found for id: $agentId")
+        // Debug: print all available agents
+        agents.forEach { ag ->
+            println("PlaygroundScreen: Available agent: ${ag.id} - ${ag.title}")
+        }
+    }
+
+    // Show loading if agents are not loaded yet, but add a timeout
+    if (agents.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                CircularProgressIndicator()
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Loading AI Playground...")
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "Agent ID: $agentId",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "If this takes too long, agents may not be loading properly.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = {
+                    // Force reload agents
+                    println("PlaygroundScreen: Force reloading agents")
+                    viewModel.loadAgents()
+                }) {
+                    Text("Retry Loading")
+                }
+            }
+        }
+        return
+    }
+
+    // Show error if agent not found and agentId is specified
+    if (agentId != -1 && agent == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    Icons.Filled.Error,
+                    contentDescription = "Error",
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(48.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    "Agent not found",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "The selected AI agent could not be loaded.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = onBackPressed) {
+                    Text("Go Back")
+                }
+            }
+        }
+        return
+    }
+
+    // All remember calls must be at the top level, outside conditional blocks
     val pagerState = rememberPagerState(pageCount = { 3 })
     val tabTitles = listOf("Learn", "Code", "Chat")
 
@@ -165,7 +272,26 @@ fun PlaygroundScreen(
     var isCompleted by remember { mutableStateOf(false) }
 
     // Chat state
-    var currentModel by remember { mutableStateOf(agent?.modelType ?: OllamaModel.LLAMA2) }
+    var currentModel by remember {
+        mutableStateOf(
+            try {
+                agent?.modelType?.let { modelTypeString ->
+                    when (modelTypeString.uppercase()) {
+                        "LLAMA2" -> OllamaModel.LLAMA2
+                        "MISTRAL" -> OllamaModel.MISTRAL
+                        "CODELLAMA" -> OllamaModel.CODELLAMA
+                        "NEURAL_CHAT" -> OllamaModel.NEURAL_CHAT
+                        "VICUNA" -> OllamaModel.VICUNA
+                        "ORCA" -> OllamaModel.ORCA
+                        else -> OllamaModel.LLAMA2
+                    }
+                } ?: OllamaModel.LLAMA2
+            } catch (e: Exception) {
+                println("PlaygroundScreen: Error converting modelType: ${e.message}")
+                OllamaModel.LLAMA2
+            }
+        )
+    }
     var isStreaming by remember { mutableStateOf(true) }
     var showModelSelector by remember { mutableStateOf(false) }
     var showSetupDialog by remember { mutableStateOf(false) }
@@ -309,10 +435,7 @@ fun PlaygroundScreen(
                     }
 
                     // Settings
-                    IconButton(onClick = {
-                        val intent = Intent(activityContext, SettingsActivity::class.java)
-                        activityContext?.startActivity(intent)
-                    }) {
+                    IconButton(onClick = onNavigateToSettings) {
                         Icon(Icons.Filled.Settings, contentDescription = "Settings")
                     }
 
@@ -672,7 +795,7 @@ fun CodeTab(agent: Agent?) {
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "import com.example.aiagent.*\n\nfun main() {\n    // Your AI agent code here\n    val agent = AIAgent()\n    agent.initialize()\n}",
+                                text = "fun main() {\n    // Your code here\n    println(\"Hello, World!\")\n}",
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
                             )
@@ -681,6 +804,14 @@ fun CodeTab(agent: Agent?) {
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PlaygroundPreview() {
+    MaterialTheme {
+        PlaygroundScreen(agentId = 1)
     }
 }
 
@@ -957,13 +1088,5 @@ fun VideoTutorialsDialog(
                 }
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PlaygroundPreview() {
-    MaterialTheme {
-        PlaygroundScreen(agentId = 1)
     }
 }
