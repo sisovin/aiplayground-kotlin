@@ -77,6 +77,7 @@ class PlaygroundActivity : ComponentActivity() {
         println("PlaygroundActivity: onCreate called")
 
         try {
+            println("PlaygroundActivity: Getting agent_id from intent")
             val agentId = intent.getIntExtra("agent_id", -1)
 
             // Debug logging
@@ -136,6 +137,7 @@ class PlaygroundActivity : ComponentActivity() {
                         }
                     )
                 }
+                println("PlaygroundActivity: UI rendering completed")
             }
             println("PlaygroundActivity: setContent completed successfully")
         } catch (e: Exception) {

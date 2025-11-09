@@ -51,7 +51,8 @@
 
         <activity
             android:name=".ui.playground.PlaygroundActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/Theme.AiagentsPlayapp.NoActionBar" />
 
         <activity
             android:name=".ui.cart.CartActivity"

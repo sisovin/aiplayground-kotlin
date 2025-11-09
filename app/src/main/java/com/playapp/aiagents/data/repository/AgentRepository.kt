@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.timeout
+import kotlinx.coroutines.withTimeout
 import kotlin.time.Duration.Companion.seconds
 
 class AgentRepository(private val firebaseService: FirebaseService = FirebaseService()) {
@@ -214,16 +215,23 @@ class AgentRepository(private val firebaseService: FirebaseService = FirebaseSer
             println("AgentRepository: Failed to load from assets: ${e.message}")
         }
 
-        // Then try Firebase
+        // Then try Firebase - collect first emission only
         try {
-            val firebaseAgents = firebaseService.getAgents()
-            firebaseAgents.timeout(5.seconds).catch { e ->
-                println("AgentRepository: Firebase failed: ${e.message}")
-            }.collect { agents ->
-                if (agents.isNotEmpty()) {
-                    println("AgentRepository: Emitting ${agents.size} agents from Firebase")
-                    emit(agents)
+            println("AgentRepository: Attempting to load from Firebase")
+            var firebaseAgentsList: List<Agent>? = null
+            withTimeout(5000) { // 5 seconds timeout
+                firebaseService.getAgents().collect { agents ->
+                    if (firebaseAgentsList == null) { // Only take the first emission
+                        firebaseAgentsList = agents
+                    }
                 }
+            }
+
+            if (firebaseAgentsList != null && firebaseAgentsList!!.isNotEmpty()) {
+                println("AgentRepository: Emitting ${firebaseAgentsList!!.size} agents from Firebase")
+                emit(firebaseAgentsList!!)
+            } else {
+                println("AgentRepository: No agents received from Firebase")
             }
         } catch (e: Exception) {
             println("AgentRepository: Firebase error: ${e.message}")
@@ -235,9 +243,15 @@ class AgentRepository(private val firebaseService: FirebaseService = FirebaseSer
             val json = context.assets.open("database.json").bufferedReader().use { it.readText() }
             println("AgentRepository: Loaded JSON from assets, length: ${json.length}")
             val gson = Gson()
-            val type = object : TypeToken<Map<String, List<Agent>>>() {}.type
-            val data: Map<String, List<Agent>> = gson.fromJson(json, type)
-            val agents = data["agents"] ?: emptyList()
+            val type = object : TypeToken<Map<String, Any>>() {}.type
+            val data: Map<String, Any> = gson.fromJson(json, type)
+            val agentsJson = data["agents"]
+            val agents: List<Agent> = if (agentsJson != null) {
+                val agentsType = object : TypeToken<List<Agent>>() {}.type
+                gson.fromJson(gson.toJson(agentsJson), agentsType)
+            } else {
+                emptyList()
+            }
             println("AgentRepository: Parsed ${agents.size} agents from JSON")
             agents.forEach { agent ->
                 println("AgentRepository: Agent ${agent.id}: ${agent.title}")

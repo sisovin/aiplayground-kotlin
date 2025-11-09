@@ -37,7 +37,7 @@ class OllamaApiService(
     data class ChatResponse(
         val model: String,
         val created_at: String,
-        val message: Message,
+        val response: String,
         val done: Boolean,
         val total_duration: Long? = null,
         val load_duration: Long? = null,
@@ -45,11 +45,6 @@ class OllamaApiService(
         val prompt_eval_duration: Long? = null,
         val eval_count: Int? = null,
         val eval_duration: Long? = null
-    )
-
-    data class Message(
-        val role: String,
-        val content: String
     )
 
     data class ModelInfo(
@@ -88,7 +83,7 @@ class OllamaApiService(
         return when (model) {
             OllamaModel.LLAMA2 -> "llama2"
             OllamaModel.MISTRAL -> "mistral"
-            OllamaModel.CODELLAMA -> "codellama"
+            OllamaModel.CODELLAMA -> "codellama:7b"
             OllamaModel.NEURAL_CHAT -> "neural-chat"
             OllamaModel.VICUNA -> "vicuna"
             OllamaModel.ORCA -> "orca-mini"
@@ -141,9 +136,12 @@ class OllamaApiService(
                             if (currentLine.isNotBlank()) {
                                 try {
                                     val chatResponse = gson.fromJson(currentLine, ChatResponse::class.java)
-                                    val chunk = chatResponse.message.content
+                                    val chunk = chatResponse.response
                                     fullResponse += chunk
-                                    emit(Pair(fullResponse, null))
+
+                                    // Format the response for prettier markdown display
+                                    val formattedResponse = formatBotResponse(fullResponse)
+                                    emit(Pair(formattedResponse, null))
 
                                     if (chatResponse.done) {
                                         finalMetrics = PerformanceMetrics(
@@ -167,7 +165,8 @@ class OllamaApiService(
                     }
 
                     // Emit final result with metrics
-                    emit(Pair(fullResponse, finalMetrics))
+                    val finalFormattedResponse = formatBotResponse(fullResponse)
+                    emit(Pair(finalFormattedResponse, finalMetrics))
                 }
             } ?: throw IOException("Empty response body")
 
@@ -229,7 +228,7 @@ class OllamaApiService(
                     )
                 )
 
-                Pair(chatResponse.message.content, metrics)
+                Pair(formatBotResponse(chatResponse.response), metrics)
             } ?: throw IOException("Empty response body")
 
         } catch (e: Exception) {
@@ -327,5 +326,64 @@ class OllamaApiService(
     private fun calculateTokensPerSecond(tokenCount: Int, durationNs: Long): Double {
         val durationSeconds = durationNs / 1_000_000_000.0
         return if (durationSeconds > 0) tokenCount / durationSeconds else 0.0
+    }
+
+    /**
+     * Format the bot response in prettier markdown format
+     */
+    private fun formatBotResponse(response: String): String {
+        if (response.isBlank()) return response
+
+        var formattedResponse = response.trim()
+
+        // Add proper markdown formatting for code blocks
+        formattedResponse = formattedResponse.replace(Regex("```(\\w+)?\\n?([\\s\\S]*?)```")) { matchResult ->
+            val language = matchResult.groupValues.getOrNull(1)?.takeIf { it.isNotEmpty() } ?: ""
+            val code = matchResult.groupValues[2].trim()
+            "```$language\n$code\n```"
+        }
+
+        // Format inline code
+        formattedResponse = formattedResponse.replace(Regex("`([^`\n]+)`")) { matchResult ->
+            "`${matchResult.groupValues[1].trim()}`"
+        }
+
+        // Add proper spacing for lists
+        formattedResponse = formattedResponse.replace(Regex("(?m)^(\\d+\\.|-|\\*)\\s*")) { matchResult ->
+            val marker = matchResult.groupValues[1]
+            if (marker.matches(Regex("\\d+\\."))) {
+                "$marker "
+            } else {
+                "$marker "
+            }
+        }
+
+        // Format headers with proper spacing
+        formattedResponse = formattedResponse.replace(Regex("(?m)^(#{1,6})\\s*(.+)$")) { matchResult ->
+            val hashes = matchResult.groupValues[1]
+            val title = matchResult.groupValues[2].trim()
+            "$hashes $title"
+        }
+
+        // Add line breaks after headers and lists for better readability
+        formattedResponse = formattedResponse.replace(Regex("(?m)^(#{1,6}.*)$")) { matchResult ->
+            "${matchResult.groupValues[1]}\n"
+        }
+
+        // Format bold and italic text
+        formattedResponse = formattedResponse.replace(Regex("\\*\\*\\*([^*]+)\\*\\*\\*")) { matchResult ->
+            "***${matchResult.groupValues[1].trim()}***"
+        }
+        formattedResponse = formattedResponse.replace(Regex("\\*\\*([^*]+)\\*\\*")) { matchResult ->
+            "**${matchResult.groupValues[1].trim()}**"
+        }
+        formattedResponse = formattedResponse.replace(Regex("\\*([^*]+)\\*")) { matchResult ->
+            "*${matchResult.groupValues[1].trim()}*"
+        }
+
+        // Clean up excessive whitespace
+        formattedResponse = formattedResponse.replace(Regex("\n{3,}"), "\n\n")
+
+        return formattedResponse.trim()
     }
 }
