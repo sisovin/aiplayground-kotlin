@@ -154,6 +154,10 @@ fun HomeScreen(
 
     val context = LocalContext.current
 
+    // Get current user's avatar URL
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val userAvatarUrl = currentUser?.photoUrl?.toString()
+
     // Handle navigation
     fun handleNavigation(item: BottomNavItem) {
         selectedNavItem = item
@@ -230,12 +234,16 @@ fun HomeScreen(
             )
         },
         bottomBar = {
+            val currentUser = FirebaseAuth.getInstance().currentUser
+            val userAvatarUrl = currentUser?.photoUrl?.toString()
+
             BottomNavigationBar(
                 selectedItem = selectedNavItem,
                 onItemSelected = ::handleNavigation,
                 showMenu = showMenu,
                 onShowMenuChange = { showMenu = it },
                 agents = agents,
+                userAvatarUrl = userAvatarUrl,
                 context = context,
                 onNavigateToHome = { /* Already on home */ },
                 onNavigateToCourses = onGetStarted,
@@ -1020,6 +1028,7 @@ fun BottomNavigationBar(
     showMenu: Boolean,
     onShowMenuChange: (Boolean) -> Unit,
     agents: List<com.playapp.aiagents.data.model.Agent>,
+    userAvatarUrl: String? = null,
     context: Context = LocalContext.current,
     onNavigateToHome: () -> Unit = {},
     onNavigateToCourses: () -> Unit = {},
@@ -1033,7 +1042,19 @@ fun BottomNavigationBar(
             BottomNavItem.values().forEach { item ->
                 NavigationBarItem(
                     icon = {
-                        Icon(item.icon, contentDescription = item.title)
+                        if (item == BottomNavItem.Profile && userAvatarUrl?.isNotEmpty() == true) {
+                            // Show user avatar for Profile item
+                            Image(
+                                painter = rememberAsyncImagePainter(userAvatarUrl),
+                                contentDescription = "User Avatar",
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Icon(item.icon, contentDescription = item.title)
+                        }
                     },
                     label = null, // Remove text labels
                     selected = selectedItem == item,

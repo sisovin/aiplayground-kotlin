@@ -23,31 +23,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import android.util.Log
 import androidx.activity.viewModels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.playapp.aiagents.ui.viewmodel.AgentViewModel
 import com.playapp.aiagents.data.repository.AgentRepository
+import com.playapp.aiagents.data.service.FirebaseAuthService
+import com.playapp.aiagents.data.service.FirebaseService
+import com.google.firebase.auth.FirebaseAuth
+import coil.compose.rememberAsyncImagePainter
+import coil.compose.AsyncImagePainter
+import androidx.compose.ui.layout.ContentScale
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.ActivityResultLauncher
+import android.net.Uri
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import androidx.activity.compose.rememberLauncherForActivityResult
 
 class ProfileActivity : ComponentActivity() {
-    private val viewModel: AgentViewModel by viewModels {
-        object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                if (modelClass.isAssignableFrom(AgentViewModel::class.java)) {
-                    @Suppress("UNCHECKED_CAST")
-                    return AgentViewModel(application, AgentRepository()) as T
-                }
-                throw IllegalArgumentException("Unknown ViewModel class")
-            }
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
                 ProfileScreen(
-                    viewModel = viewModel,
                     onBackPressed = { finish() }
                 )
             }
@@ -58,23 +58,25 @@ class ProfileActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    viewModel: AgentViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
     onBackPressed: () -> Unit = {}
 ) {
-    val agents by viewModel.agents.collectAsState()
+    val firebaseService = remember { FirebaseService() }
+    val authService = remember { FirebaseAuthService() }
+    val coroutineScope = rememberCoroutineScope()
 
-    // Profile state
+    // Profile state (using hardcoded data for now)
     var showEditDialog by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
     var userName by remember { mutableStateOf("AI Explorer") }
     var userEmail by remember { mutableStateOf("explorer@aiplayground.com") }
     var userBio by remember { mutableStateOf("Passionate about exploring the frontiers of AI and machine learning.") }
+    var userAvatarUrl by remember { mutableStateOf("") }
 
-    // Calculate stats
-    val totalAgents = agents.size
-    val completedSessions = 15 // Mock data
+    // Calculate stats (mock data for now)
+    val totalAgents = 9
+    val completedSessions = 15
     val totalTimeSpent = 240 // Mock data in minutes
-    val favoriteAgent = agents.firstOrNull()?.title ?: "None"
+    val favoriteAgent = "Building Agentic RAG with LlamaIndex"
 
     Scaffold(
         topBar = {
@@ -105,6 +107,7 @@ fun ProfileScreen(
                     userName = userName,
                     userEmail = userEmail,
                     userBio = userBio,
+                    userAvatarUrl = userAvatarUrl,
                     onEditClick = { showEditDialog = true }
                 )
             }
@@ -147,11 +150,38 @@ fun ProfileScreen(
             currentName = userName,
             currentEmail = userEmail,
             currentBio = userBio,
-            onSave = { name, email, bio ->
-                userName = name
-                userEmail = email
-                userBio = bio
-                showEditDialog = false
+            currentAvatarUrl = userAvatarUrl,
+            onSave = { name, email, bio, avatarUrl ->
+                coroutineScope.launch {
+                    val currentUser = authService.currentUser
+                    if (currentUser != null) {
+                        val userProfile = com.playapp.aiagents.data.model.UserProfile(
+                            id = currentUser.uid,
+                            fullName = name,
+                            email = email,
+                            bio = bio,
+                            avatarUrl = avatarUrl,
+                            createdAt = System.currentTimeMillis().toString(),
+                            updatedAt = System.currentTimeMillis().toString()
+                        )
+
+                        firebaseService.saveUserProfile(currentUser.uid, userProfile).onSuccess {
+                            // Update local state
+                            userName = name
+                            userEmail = email
+                            userBio = bio
+                            userAvatarUrl = avatarUrl
+                            showEditDialog = false
+                            Log.d("ProfileActivity", "Profile saved successfully")
+                        }.onFailure { error ->
+                            Log.e("ProfileActivity", "Failed to save profile", error)
+                            // TODO: Show error message to user
+                        }
+                    } else {
+                        Log.e("ProfileActivity", "No authenticated user found")
+                        // TODO: Show error message to user
+                    }
+                }
             },
             onDismiss = { showEditDialog = false }
         )
@@ -160,6 +190,29 @@ fun ProfileScreen(
     if (showSettingsDialog) {
         SettingsDialog(onDismiss = { showSettingsDialog = false })
     }
+
+    // Load user profile data from Firebase
+    LaunchedEffect(Unit) {
+        val currentUser = authService.currentUser
+        if (currentUser != null) {
+            try {
+                firebaseService.getUserProfile(currentUser.uid).collect { profile ->
+                    profile?.let {
+                        userName = it.fullName
+                        userEmail = it.email
+                        userBio = it.bio
+                        userAvatarUrl = it.avatarUrl
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("ProfileActivity", "Failed to load user profile", e)
+                // Keep default values if profile loading fails
+            }
+        } else {
+            Log.w("ProfileActivity", "No authenticated user found, using default profile")
+            // Keep default values if no user is authenticated
+        }
+    }
 }
 
 @Composable
@@ -167,6 +220,7 @@ fun ProfileHeader(
     userName: String,
     userEmail: String,
     userBio: String,
+    userAvatarUrl: String,
     onEditClick: () -> Unit
 ) {
     Column(
@@ -198,12 +252,23 @@ fun ProfileHeader(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = userName.first().toString(),
-                style = MaterialTheme.typography.displayMedium,
-                color = Color.White,
-                fontWeight = FontWeight.Bold
-            )
+            if (userAvatarUrl.isNotEmpty()) {
+                Image(
+                    painter = rememberAsyncImagePainter(userAvatarUrl),
+                    contentDescription = "Profile Avatar",
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Text(
+                    text = userName.firstOrNull()?.toString() ?: "?",
+                    style = MaterialTheme.typography.displayMedium,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -596,22 +661,102 @@ fun EditProfileDialog(
     currentName: String,
     currentEmail: String,
     currentBio: String,
-    onSave: (String, String, String) -> Unit,
+    currentAvatarUrl: String,
+    onSave: (String, String, String, String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var name by remember { mutableStateOf(currentName) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    var fullName by remember { mutableStateOf(currentName) }
     var email by remember { mutableStateOf(currentEmail) }
     var bio by remember { mutableStateOf(currentBio) }
+    var avatarUrl by remember { mutableStateOf(currentAvatarUrl) }
+    var isUploading by remember { mutableStateOf(false) }
+
+    // Image picker launcher
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            // For now, just set the URI as string (in a real app, you'd upload to storage)
+            avatarUrl = uri.toString()
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Edit Profile") },
         text = {
             Column {
+                // Avatar Section
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(CircleShape)
+                            .background(
+                                brush = Brush.linearGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primary,
+                                        MaterialTheme.colorScheme.secondary
+                                    )
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (avatarUrl.isNotEmpty()) {
+                            Image(
+                                painter = rememberAsyncImagePainter(avatarUrl),
+                                contentDescription = "Profile Avatar",
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Text(
+                                text = fullName.firstOrNull()?.toString() ?: "?",
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Profile Picture",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Button(
+                            onClick = { imagePickerLauncher.launch("image/*") },
+                            enabled = !isUploading,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            if (isUploading) {
+                                androidx.compose.material3.CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    color = Color.White
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                            Text(if (isUploading) "Uploading..." else "Change Photo")
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Name") },
+                    value = fullName,
+                    onValueChange = { fullName = it },
+                    label = { Text("Full Name") },
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -636,7 +781,12 @@ fun EditProfileDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(name, email, bio) }) {
+            TextButton(
+                onClick = {
+                    onSave(fullName, email, bio, avatarUrl)
+                },
+                enabled = !isUploading
+            ) {
                 Text("Save")
             }
         },

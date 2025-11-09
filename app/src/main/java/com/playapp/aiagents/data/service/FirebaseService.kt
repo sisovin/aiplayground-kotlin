@@ -243,4 +243,46 @@ class FirebaseService {
             else -> "Unknown"
         }
     }
+
+    // Profile management
+    private val profilesRef = database.getReference("profiles")
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun getUserProfile(userId: String): Flow<com.playapp.aiagents.data.model.UserProfile?> = callbackFlow {
+        val profileRef = profilesRef.child(userId)
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val profile = snapshot.getValue(com.playapp.aiagents.data.model.UserProfile::class.java)
+                trySend(profile)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+        profileRef.addValueEventListener(listener)
+        awaitClose { profileRef.removeEventListener(listener) }
+    }
+
+    suspend fun saveUserProfile(userId: String, profile: com.playapp.aiagents.data.model.UserProfile): Result<Unit> {
+        return try {
+            val profileRef = profilesRef.child(userId)
+            profileRef.setValue(profile).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error saving user profile", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateUserProfile(userId: String, updates: Map<String, Any>): Result<Unit> {
+        return try {
+            val profileRef = profilesRef.child(userId)
+            profileRef.updateChildren(updates).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating user profile", e)
+            Result.failure(e)
+        }
+    }
 }

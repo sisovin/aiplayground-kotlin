@@ -56,8 +56,6 @@ fun SettingsScreen(
     }
 
     // Settings state
-    var userName by remember { mutableStateOf(prefs.getString("user_name", "") ?: "") }
-    var userEmail by remember { mutableStateOf(prefs.getString("user_email", "") ?: "") }
     var ollamaServerUrl by remember { mutableStateOf(prefs.getString("ollama_server_url", "http://10.0.2.2:11434") ?: "http://10.0.2.2:11434") }
     var ollamaNetworkExposure by remember { mutableStateOf(prefs.getBoolean("ollama_network_exposure", false)) }
     var modelLocation by remember { mutableStateOf(prefs.getString("model_location", "local") ?: "local") }
@@ -114,31 +112,26 @@ fun SettingsScreen(
                         )
                     }
 
-                    OutlinedTextField(
-                        value = userName,
-                        onValueChange = {
-                            userName = it
-                            prefs.edit().putString("user_name", it).apply()
-                        },
-                        label = { Text("Name") },
+                    // Display current user's name and email from authentication
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        leadingIcon = {
-                            Icon(Icons.Filled.Person, contentDescription = null)
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(Icons.Filled.Person, contentDescription = null)
+                        Column {
+                            Text(
+                                "Name: ${currentUser?.displayName ?: "Not set"}",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                "Email: ${currentUser?.email ?: "Not signed in"}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
-                    )
-
-                    OutlinedTextField(
-                        value = userEmail,
-                        onValueChange = {
-                            userEmail = it
-                            prefs.edit().putString("user_email", it).apply()
-                        },
-                        label = { Text("Email") },
-                        modifier = Modifier.fillMaxWidth(),
-                        leadingIcon = {
-                            Icon(Icons.Filled.Email, contentDescription = null)
-                        }
-                    )
+                    }
 
                     // Authentication Status
                     Row(
@@ -377,8 +370,6 @@ fun SettingsScreen(
                     Button(
                         onClick = {
                             // Reset all settings to defaults
-                            userName = ""
-                            userEmail = ""
                             ollamaNetworkExposure = false
                             modelLocation = "local"
                             contextLength = 4096

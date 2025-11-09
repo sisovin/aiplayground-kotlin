@@ -1,0 +1,55 @@
+type User @table {
+  username: String!
+  email: String!
+  createdAt: Timestamp!
+  displayName: String
+  profilePictureUrl: String
+}
+
+type AgentType @table {
+  name: String!
+  description: String!
+  createdAt: Timestamp!
+  iconUrl: String
+  difficultyLevel: String
+}
+
+type Course @table {
+  title: String!
+  description: String!
+  agentType: AgentType!
+  createdAt: Timestamp!
+  estimatedCompletionTime: String
+  imageUrl: String
+}
+
+type Module @table {
+  title: String!
+  content: String!
+  course: Course!
+  orderIndex: Int!
+  createdAt: Timestamp!
+  quizData: String
+  codeExample: String
+}
+
+type UserCourseProgress @table {
+  user: User!
+  course: Course!
+  createdAt: Timestamp!
+  updatedAt: Timestamp!
+  completedModules: [UUID]
+  isCompleted: Boolean
+  lastAccessedModuleId: UUID
+}
+
+type PlaygroundSession @table {
+  user: User!
+  agentType: AgentType!
+  name: String!
+  codeSnippet: String!
+  createdAt: Timestamp!
+  updatedAt: Timestamp!
+  configuration: String
+  outputLog: String
+}
