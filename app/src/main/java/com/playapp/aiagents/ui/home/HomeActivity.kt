@@ -48,6 +48,7 @@ import androidx.compose.foundation.Image
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.ui.tooling.preview.Preview
 import com.google.firebase.auth.FirebaseAuth
+import com.playapp.aiagents.data.service.FirebaseService
 import com.playapp.aiagents.ui.notifications.NotificationsActivity
 import com.playapp.aiagents.ui.playground.PlaygroundActivity
 
@@ -137,6 +138,9 @@ fun HomeScreen(
     var selectedNavItem by remember { mutableStateOf(BottomNavItem.Home) }
     var showMenu by remember { mutableStateOf(false) }
 
+    // User avatar state
+    var userAvatarUrl by remember { mutableStateOf<String?>(null) }
+
     // Animation states
     var heroVisible by remember { mutableStateOf(false) }
     var featuresVisible by remember { mutableStateOf(false) }
@@ -152,11 +156,20 @@ fun HomeScreen(
         agentsVisible = true
     }
 
-    val context = LocalContext.current
-
-    // Get current user's avatar URL
+    // Fetch user avatar URL
+    val firebaseService = remember { FirebaseService() }
     val currentUser = FirebaseAuth.getInstance().currentUser
-    val userAvatarUrl = currentUser?.photoUrl?.toString()
+    LaunchedEffect(currentUser?.uid) {
+        if (currentUser?.uid != null) {
+            firebaseService.getUserProfile(currentUser.uid).collect { profile ->
+                userAvatarUrl = profile?.avatarUrl?.takeIf { it.isNotEmpty() }
+            }
+        } else {
+            userAvatarUrl = null
+        }
+    }
+
+    val context = LocalContext.current
 
     // Handle navigation
     fun handleNavigation(item: BottomNavItem) {
@@ -234,9 +247,6 @@ fun HomeScreen(
             )
         },
         bottomBar = {
-            val currentUser = FirebaseAuth.getInstance().currentUser
-            val userAvatarUrl = currentUser?.photoUrl?.toString()
-
             BottomNavigationBar(
                 selectedItem = selectedNavItem,
                 onItemSelected = ::handleNavigation,
