@@ -7,7 +7,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.*
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.pager.*
@@ -48,6 +51,9 @@ import com.playapp.aiagents.ui.settings.SettingsActivity
 import com.playapp.aiagents.ui.auth.SigninActivity
 import com.playapp.aiagents.ui.auth.SignupActivity
 import androidx.compose.ui.tooling.preview.Preview
+import coil.compose.rememberAsyncImagePainter
+import com.playapp.aiagents.data.service.FirebaseService
+import com.playapp.aiagents.data.model.UserProfile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import com.playapp.aiagents.data.service.FirebaseAuthService
@@ -320,11 +326,24 @@ fun DashboardScreen(
     var currentUser by remember { mutableStateOf<com.google.firebase.auth.FirebaseUser?>(null) }
     var isUserLoggedIn by remember { mutableStateOf(false) }
 
+    // User profile state
+    val firebaseService = remember { FirebaseService() }
+    var userProfile by remember { mutableStateOf<UserProfile?>(null) }
+
     // Load auth state
     LaunchedEffect(Unit) {
         authService.getAuthStateFlow().collect { user ->
             currentUser = user
             isUserLoggedIn = user != null
+
+            // Load user profile when user is authenticated
+            if (user != null) {
+                firebaseService.getUserProfile(user.uid).collect { profile ->
+                    userProfile = profile
+                }
+            } else {
+                userProfile = null
+            }
         }
     }
 
@@ -487,32 +506,50 @@ fun DashboardScreen(
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             // User Avatar
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .background(
-                                        brush = Brush.linearGradient(
-                                            colors = listOf(
-                                                MaterialTheme.colorScheme.primary,
-                                                MaterialTheme.colorScheme.secondary
-                                            )
-                                        ),
-                                        shape = CircleShape
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = currentUser?.displayName?.firstOrNull()?.toString() ?: currentUser?.email?.firstOrNull()?.toString()?.uppercase() ?: "U",
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    color = MaterialTheme.colorScheme.onPrimary
+                            if (userProfile?.avatarUrl?.isNotEmpty() == true) {
+                                // Display actual avatar image
+                                Image(
+                                    painter = rememberAsyncImagePainter(userProfile!!.avatarUrl),
+                                    contentDescription = "User Avatar",
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
                                 )
+                            } else {
+                                // Fallback to placeholder with initial
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .background(
+                                            brush = Brush.linearGradient(
+                                                colors = listOf(
+                                                    MaterialTheme.colorScheme.primary,
+                                                    MaterialTheme.colorScheme.secondary
+                                                )
+                                            ),
+                                            shape = CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = userProfile?.fullName?.firstOrNull()?.toString()
+                                            ?: currentUser?.displayName?.firstOrNull()?.toString()
+                                            ?: currentUser?.email?.firstOrNull()?.toString()?.uppercase()
+                                            ?: "U",
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        color = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                }
                             }
 
                             Spacer(modifier = Modifier.width(12.dp))
 
                             Column {
                                 Text(
-                                    text = currentUser?.displayName ?: "AI Explorer",
+                                    text = userProfile?.fullName?.takeIf { it.isNotEmpty() }
+                                        ?: currentUser?.displayName
+                                        ?: "AI Explorer",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
