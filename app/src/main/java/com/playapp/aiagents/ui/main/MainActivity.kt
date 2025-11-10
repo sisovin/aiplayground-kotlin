@@ -364,7 +364,45 @@ fun DashboardScreen(
                     navItems.forEachIndexed { index, item ->
                         NavigationBarItem(
                             icon = {
-                                Icon(item.icon, contentDescription = item.label)
+                                if (index == 4 && isUserLoggedIn && userProfile?.avatarUrl?.isNotEmpty() == true) {
+                                    // Show user avatar for profile tab
+                                    Image(
+                                        painter = rememberAsyncImagePainter(userProfile!!.avatarUrl),
+                                        contentDescription = "User Avatar",
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .clip(CircleShape),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                } else if (index == 4 && isUserLoggedIn) {
+                                    // Show initial placeholder for profile tab
+                                    Box(
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .background(
+                                                brush = Brush.linearGradient(
+                                                    colors = listOf(
+                                                        MaterialTheme.colorScheme.primary,
+                                                        MaterialTheme.colorScheme.secondary
+                                                    )
+                                                ),
+                                                shape = CircleShape
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = userProfile?.fullName?.firstOrNull()?.toString()
+                                                ?: currentUser?.displayName?.firstOrNull()?.toString()
+                                                ?: currentUser?.email?.firstOrNull()?.toString()?.uppercase()
+                                                ?: "U",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onPrimary
+                                        )
+                                    }
+                                } else {
+                                    // Show default icon for other tabs
+                                    Icon(item.icon, contentDescription = item.label)
+                                }
                             },
                             label = null, // Remove text labels
                             selected = selectedItem == index,
