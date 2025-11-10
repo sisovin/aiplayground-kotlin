@@ -370,4 +370,104 @@ class FirebaseService {
             Result.failure(e)
         }
     }
+
+    // Course progress management
+    private val progressRef = database.getReference("course_progress")
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun getUserCourseProgress(userId: String): Flow<List<com.playapp.aiagents.data.model.UserCourseProgress>> = callbackFlow {
+        val userProgressRef = progressRef.child(userId)
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val progressList = snapshot.children.mapNotNull { child ->
+                    try {
+                        child.getValue(com.playapp.aiagents.data.model.UserCourseProgress::class.java)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to map user course progress from snapshot: ${e.message}", e)
+                        null
+                    }
+                }
+                trySend(progressList)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+        userProgressRef.addValueEventListener(listener)
+        awaitClose { userProgressRef.removeEventListener(listener) }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun getCourseProgress(userId: String, courseId: String): Flow<com.playapp.aiagents.data.model.UserCourseProgress?> = callbackFlow {
+        val courseProgressRef = progressRef.child(userId).child(courseId)
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val progress = snapshot.getValue(com.playapp.aiagents.data.model.UserCourseProgress::class.java)
+                trySend(progress)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+        courseProgressRef.addValueEventListener(listener)
+        awaitClose { courseProgressRef.removeEventListener(listener) }
+    }
+
+    suspend fun saveCourseProgress(userId: String, courseId: String, progress: com.playapp.aiagents.data.model.UserCourseProgress): Result<Unit> {
+        return try {
+            val courseProgressRef = progressRef.child(userId).child(courseId)
+            courseProgressRef.setValue(progress).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error saving course progress", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateCourseProgress(userId: String, courseId: String, updates: Map<String, Any>): Result<Unit> {
+        return try {
+            val courseProgressRef = progressRef.child(userId).child(courseId)
+            courseProgressRef.updateChildren(updates).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating course progress", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateProgressOnLessonComplete(userId: String, courseId: String, courseTitle: String, totalLessons: Int): Result<Unit> {
+        return try {
+            val courseProgressRef = progressRef.child(userId).child(courseId)
+
+            // Get current progress
+            val currentSnapshot = courseProgressRef.get().await()
+            val currentProgress = currentSnapshot.getValue(com.playapp.aiagents.data.model.UserCourseProgress::class.java)
+
+            val now = System.currentTimeMillis().toString()
+            val completedLessons = (currentProgress?.completedLessons ?: 0) + 1
+            val progress = completedLessons.toFloat() / totalLessons.toFloat()
+
+            val updatedProgress = com.playapp.aiagents.data.model.UserCourseProgress(
+                id = courseId,
+                userId = userId,
+                courseId = courseId,
+                courseTitle = courseTitle,
+                progress = progress,
+                lastAccessed = now,
+                completedAt = if (progress >= 1.0f) now else null,
+                totalLessons = totalLessons,
+                completedLessons = completedLessons,
+                createdAt = currentProgress?.createdAt ?: now,
+                updatedAt = now
+            )
+
+            courseProgressRef.setValue(updatedProgress).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating progress on lesson complete", e)
+            Result.failure(e)
+        }
+    }
 }

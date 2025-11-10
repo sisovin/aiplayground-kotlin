@@ -54,6 +54,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import coil.compose.rememberAsyncImagePainter
 import com.playapp.aiagents.data.service.FirebaseService
 import com.playapp.aiagents.data.model.UserProfile
+import com.playapp.aiagents.data.model.UserCourseProgress
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import com.playapp.aiagents.data.service.FirebaseAuthService
@@ -330,6 +331,9 @@ fun DashboardScreen(
     val firebaseService = remember { FirebaseService() }
     var userProfile by remember { mutableStateOf<UserProfile?>(null) }
 
+    // Course progress state
+    var courseProgress by remember { mutableStateOf<List<UserCourseProgress>>(emptyList()) }
+
     // Load auth state
     LaunchedEffect(Unit) {
         authService.getAuthStateFlow().collect { user ->
@@ -341,8 +345,14 @@ fun DashboardScreen(
                 firebaseService.getUserProfile(user.uid).collect { profile ->
                     userProfile = profile
                 }
+
+                // Load course progress for authenticated user
+                firebaseService.getUserCourseProgress(user.uid).collect { progress ->
+                    courseProgress = progress
+                }
             } else {
                 userProfile = null
+                courseProgress = emptyList()
             }
         }
     }
@@ -675,18 +685,28 @@ fun DashboardScreen(
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
 
-                        // Mock continue learning items
-                        ContinueLearningItem(
-                            courseTitle = "Introduction to Machine Learning",
-                            progress = 0.65f,
-                            lastAccessed = "2 hours ago"
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        ContinueLearningItem(
-                            courseTitle = "Deep Learning Fundamentals",
-                            progress = 0.30f,
-                            lastAccessed = "1 day ago"
-                        )
+                        if (courseProgress.isEmpty()) {
+                            // Show message when no progress data
+                            Text(
+                                text = "No courses in progress yet. Start learning to see your progress here!",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        } else {
+                            // Display real course progress data
+                            courseProgress.take(3).forEach { progress ->
+                                ContinueLearningItem(
+                                    courseTitle = progress.courseTitle,
+                                    progress = progress.progress,
+                                    lastAccessed = formatLastAccessed(progress.lastAccessed)
+                                )
+                                if (progress != courseProgress.take(3).last()) {
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -842,5 +862,29 @@ fun ContinueLearningItem(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+// Utility function to format last accessed time
+fun formatLastAccessed(timestamp: String): String {
+    return try {
+        val time = timestamp.toLongOrNull() ?: return "Recently"
+        val now = System.currentTimeMillis()
+        val diff = now - time
+
+        val seconds = diff / 1000
+        val minutes = seconds / 60
+        val hours = minutes / 60
+        val days = hours / 24
+
+        when {
+            seconds < 60 -> "Just now"
+            minutes < 60 -> "$minutes minutes ago"
+            hours < 24 -> "$hours hours ago"
+            days < 7 -> "$days days ago"
+            else -> "A week ago"
+        }
+    } catch (e: Exception) {
+        "Recently"
     }
 }
