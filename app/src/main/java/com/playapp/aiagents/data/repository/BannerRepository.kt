@@ -17,21 +17,28 @@ class BannerRepository(private val firebaseService: FirebaseService = FirebaseSe
     @OptIn(FlowPreview::class)
     fun getBanners(context: Context): Flow<List<Banner>> = flow {
         // Emit local data immediately to avoid hanging
-        emit(loadBannersFromAssets(context))
+        val localBanners = loadBannersFromAssets(context)
+        println("BannerRepository: Emitting ${localBanners.size} local banners")
+        emit(localBanners)
 
         // Then try to fetch from Firebase and emit if available
         try {
+            println("BannerRepository: Attempting to fetch from Firebase")
             val firebaseBanners = firebaseService.getBanners()
             firebaseBanners.timeout(5.seconds).catch { e ->
-                // Firebase failed, but local data already emitted
+                println("BannerRepository: Firebase failed with timeout: ${e.message}")
                 e.printStackTrace()
             }.collect { banners ->
+                println("BannerRepository: Received ${banners.size} banners from Firebase")
                 if (banners.isNotEmpty()) {
+                    println("BannerRepository: Emitting Firebase banners")
                     emit(banners)
+                } else {
+                    println("BannerRepository: Firebase returned empty list")
                 }
             }
         } catch (e: Exception) {
-            // Firebase failed, but local data already emitted
+            println("BannerRepository: Firebase failed with exception: ${e.message}")
             e.printStackTrace()
         }
     }

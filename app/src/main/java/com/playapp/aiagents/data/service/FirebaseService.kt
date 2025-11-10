@@ -5,8 +5,10 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.GenericTypeIndicator
 import com.playapp.aiagents.data.model.Agent
 import com.playapp.aiagents.data.model.Banner
+import com.playapp.aiagents.data.model.UserSettings
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -52,18 +54,59 @@ class FirebaseService {
     fun getBanners(): Flow<List<Banner>> = callbackFlow {
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val banners = snapshot.children.mapNotNull { child ->
-                    try {
-                        child.getValue(Banner::class.java)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to map banner from snapshot: ${e.message}", e)
-                        null
+                Log.d(TAG, "Firebase banners snapshot: exists=${snapshot.exists()}, hasChildren=${snapshot.hasChildren()}, value=${snapshot.value}")
+
+                val banners = if (snapshot.hasChildren()) {
+                    // Data stored as individual children (preferred format)
+                    Log.d(TAG, "Parsing banners as children")
+                    snapshot.children.mapNotNull { child ->
+                        try {
+                            val banner = child.getValue(Banner::class.java)
+                            Log.d(TAG, "Parsed banner from child: $banner")
+                            banner
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to map banner from snapshot: ${e.message}", e)
+                            null
+                        }
                     }
+                } else if (snapshot.exists() && snapshot.value != null) {
+                    // Data stored as array - try to parse as List<Banner>
+                    Log.d(TAG, "Parsing banners as array, value type: ${snapshot.value?.javaClass}")
+                    try {
+                        val bannerList = snapshot.getValue(object : GenericTypeIndicator<List<Banner>>() {})
+                        Log.d(TAG, "Parsed banner array: ${bannerList?.size} items")
+                        bannerList ?: emptyList()
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to parse banner array: ${e.message}", e)
+                        // Try to cast directly
+                        try {
+                            @Suppress("UNCHECKED_CAST")
+                            val value = snapshot.value as? List<Map<String, Any>>
+                            Log.d(TAG, "Trying direct cast, value: $value")
+                            value?.mapNotNull { map ->
+                                try {
+                                    Banner(url = map["url"] as? String ?: "")
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Failed to create banner from map: $e")
+                                    null
+                                }
+                            } ?: emptyList()
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed direct cast: ${e.message}", e)
+                            emptyList()
+                        }
+                    }
+                } else {
+                    Log.d(TAG, "No banner data in Firebase")
+                    emptyList()
                 }
+
+                Log.d(TAG, "Final banner list size: ${banners.size}")
                 trySend(banners)
             }
 
             override fun onCancelled(error: DatabaseError) {
+                Log.e(TAG, "Firebase banners listener cancelled: ${error.message}")
                 close(error.toException())
             }
         }
@@ -282,6 +325,48 @@ class FirebaseService {
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Error updating user profile", e)
+            Result.failure(e)
+        }
+    }
+
+    // User settings management
+    private val userSettingsRef = database.getReference("user_settings")
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun getUserSettings(userId: String): Flow<UserSettings?> = callbackFlow {
+        val settingsRef = userSettingsRef.child(userId)
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val settings = snapshot.getValue(UserSettings::class.java)
+                trySend(settings)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+        settingsRef.addValueEventListener(listener)
+        awaitClose { settingsRef.removeEventListener(listener) }
+    }
+
+    suspend fun saveUserSettings(userId: String, settings: UserSettings): Result<Unit> {
+        return try {
+            val settingsRef = userSettingsRef.child(userId)
+            settingsRef.setValue(settings).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error saving user settings", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateUserSettings(userId: String, updates: Map<String, Any>): Result<Unit> {
+        return try {
+            val settingsRef = userSettingsRef.child(userId)
+            settingsRef.updateChildren(updates).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating user settings", e)
             Result.failure(e)
         }
     }

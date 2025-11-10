@@ -4,6 +4,10 @@
       ".read": true,
       ".write": "auth != null"
     },
+    "Banner": {
+      ".read": true,
+      ".write": "auth != null"
+    },
     "users": {
       "$userId": {
         ".read": "$userId === auth.uid",
@@ -11,6 +15,12 @@
       }
     },
     "profiles": {
+      "$userId": {
+        ".read": "$userId === auth.uid",
+        ".write": "$userId === auth.uid"
+      }
+    },
+    "user_settings": {
       "$userId": {
         ".read": "$userId === auth.uid",
         ".write": "$userId === auth.uid"

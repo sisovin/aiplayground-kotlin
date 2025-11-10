@@ -379,13 +379,13 @@
       "updatedAt": "1762704512698"
     },
     "q1cVMkWkCedL8xlwuDOqawRGy2o1": {
-      "avatarUrl": "content://com.google.android.apps.docs.storage/document/acc%3D1%3Bdoc%3Dencoded%3DkO2Xo7XjjJqMhQrlvigzWGKdXtWcl0B_gzS-lW5xbskN3W1gNtDf",
+      "avatarUrl": "content://media/picker_get_content/0/com.android.providers.media.photopicker/media/34",
       "bio": "Passionate about exploring the frontiers of AI and machine learning.",
-      "createdAt": "1762700971351",
+      "createdAt": "1762767410621",
       "email": "sisovin@outlook.com",
       "fullName": "Chieng Sisovin",
       "id": "q1cVMkWkCedL8xlwuDOqawRGy2o1",
-      "updatedAt": "1762700971351"
+      "updatedAt": "1762767410621"
     }
   },
   "schema": {
@@ -1457,6 +1457,22 @@
       "rlsEnabled": true
     }
   ],
+  "user_settings": {
+    "q1cVMkWkCedL8xlwuDOqawRGy2o1": {
+      "autoSaveConversations": true,
+      "createdAt": "",
+      "defaultModel": "codellama",
+      "geminiApiKey": "AIzaSyCLJDd9HA1iriEBPNce2C_SNfxHGDmPc-Y",
+      "id": "",
+      "language": "en",
+      "maxTokens": 2048,
+      "notificationsEnabled": true,
+      "streamingEnabled": true,
+      "theme": "DARK",
+      "updatedAt": "",
+      "userId": "q1cVMkWkCedL8xlwuDOqawRGy2o1"
+    }
+  },
   "users": {
     "userId1": {
       "bookmarks": [
