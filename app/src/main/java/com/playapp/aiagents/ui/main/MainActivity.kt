@@ -694,6 +694,18 @@ fun DashboardScreen(
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.fillMaxWidth()
                             )
+
+                            // Temporary test button to seed sample data
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = {
+                                    // CourseProgressSeeder.seedSampleData(activityContext ?: return@Button)
+                                    Toast.makeText(activityContext, "Sample data seeding temporarily disabled", Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("🔄 Seed Sample Progress Data (Coming Soon)")
+                            }
                         } else {
                             // Display real course progress data
                             courseProgress.take(3).forEach { progress ->
