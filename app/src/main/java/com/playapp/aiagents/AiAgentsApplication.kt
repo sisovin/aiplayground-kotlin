@@ -5,6 +5,7 @@ import androidx.emoji2.text.EmojiCompat
 import androidx.emoji2.text.FontRequestEmojiCompatConfig
 import androidx.core.provider.FontRequest
 import com.google.firebase.FirebaseApp
+import com.google.firebase.database.FirebaseDatabase
 
 class AiAgentsApplication : Application() {
     override fun onCreate() {
@@ -33,5 +34,12 @@ class AiAgentsApplication : Application() {
         // Initialize Firebase
         FirebaseApp.initializeApp(this)
         println("AiAgentsApplication: Firebase initialized successfully")
+
+        // Configure Firebase Database persistence BEFORE any database usage
+        FirebaseDatabase.getInstance().apply {
+            setPersistenceEnabled(true)
+            setPersistenceCacheSizeBytes(10 * 1024 * 1024) // 10MB cache
+        }
+        println("AiAgentsApplication: Firebase Database persistence configured")
     }
 }

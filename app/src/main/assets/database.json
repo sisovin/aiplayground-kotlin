@@ -368,6 +368,46 @@
       "user_id": "userId1"
     }
   },
+  "course_progress": {
+    "q1cVMkWkCedL8xlwuDOqawRGy2o1": {
+      "course1": {
+        "completedLessons": 6,
+        "courseId": "course1",
+        "courseTitle": "LLMs as Operating Systems: Agent Memory",
+        "createdAt": "1731196800000",
+        "id": "course1",
+        "lastAccessed": "1731283200000",
+        "progress": 0.65,
+        "totalLessons": 10,
+        "updatedAt": "1731283200000",
+        "userId": "q1cVMkWkCedL8xlwuDOqawRGy2o1"
+      },
+      "course2": {
+        "completedLessons": 4,
+        "courseId": "course2",
+        "courseTitle": "Foundations of Prompt Engineering (AWS)",
+        "createdAt": "1731100800000",
+        "id": "course2",
+        "lastAccessed": "1731283200000",
+        "progress": 0.3,
+        "totalLessons": 15,
+        "updatedAt": "1731283200000",
+        "userId": "q1cVMkWkCedL8xlwuDOqawRGy2o1"
+      },
+      "course3": {
+        "completedLessons": 10,
+        "courseId": "course3",
+        "courseTitle": "Introduction to LangGraph",
+        "createdAt": "1731014400000",
+        "id": "course3",
+        "lastAccessed": "1731283200000",
+        "progress": 0.85,
+        "totalLessons": 12,
+        "updatedAt": "1731283200000",
+        "userId": "q1cVMkWkCedL8xlwuDOqawRGy2o1"
+      }
+    }
+  },
   "profiles": {
     "eLPn0GJqWRRhpDVFIgKE4wcC0CY2": {
       "avatarUrl": "content://com.android.providers.media.documents/document/image%3A294032",
@@ -381,11 +421,11 @@
     "q1cVMkWkCedL8xlwuDOqawRGy2o1": {
       "avatarUrl": "content://media/picker_get_content/0/com.android.providers.media.photopicker/media/34",
       "bio": "Passionate about exploring the frontiers of AI and machine learning.",
-      "createdAt": "1762767410621",
+      "createdAt": "1762786158896",
       "email": "sisovin@outlook.com",
       "fullName": "Chieng Sisovin",
       "id": "q1cVMkWkCedL8xlwuDOqawRGy2o1",
-      "updatedAt": "1762767410621"
+      "updatedAt": "1762786158896"
     }
   },
   "schema": {

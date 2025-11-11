@@ -14,6 +14,8 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.TimeoutCancellationException
 
 class FirebaseService {
     private val TAG = "FirebaseService"
@@ -372,47 +374,87 @@ class FirebaseService {
     }
 
     // Course progress management
-    private val progressRef = database.getReference("course_progress")
+    private val progressRef = database.getReference("user_progress")
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getUserCourseProgress(userId: String): Flow<List<com.playapp.aiagents.data.model.UserCourseProgress>> = callbackFlow {
         val userProgressRef = progressRef.child(userId)
+        Log.d(TAG, "Firebase getUserCourseProgress: Setting up listener for path: user_progress/$userId")
+
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val progressList = snapshot.children.mapNotNull { child ->
-                    try {
-                        child.getValue(com.playapp.aiagents.data.model.UserCourseProgress::class.java)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to map user course progress from snapshot: ${e.message}", e)
-                        null
+                Log.d(TAG, "Firebase getUserCourseProgress onDataChange: path=${snapshot.ref.path}, exists=${snapshot.exists()}, childrenCount=${snapshot.childrenCount}")
+
+                val progressList = if (snapshot.exists()) {
+                    snapshot.children.mapNotNull { child ->
+                        try {
+                            val progress = child.getValue(com.playapp.aiagents.data.model.UserCourseProgress::class.java)
+                            Log.d(TAG, "Firebase getUserCourseProgress: Mapped progress for course ${child.key}: ${progress?.courseTitle} - ${progress?.progress}")
+                            progress
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to map user course progress from snapshot: ${e.message}", e)
+                            null
+                        }
                     }
+                } else {
+                    Log.d(TAG, "Firebase getUserCourseProgress: No data exists at path user_progress/$userId, emitting empty list")
+                    emptyList()
                 }
+
+                Log.d(TAG, "Firebase getUserCourseProgress: Sending ${progressList.size} progress items")
                 trySend(progressList)
             }
 
             override fun onCancelled(error: DatabaseError) {
+                Log.e(TAG, "Firebase getUserCourseProgress cancelled: ${error.message}")
+                trySend(emptyList()) // Send empty list on error to prevent hanging
                 close(error.toException())
             }
         }
-        userProgressRef.addValueEventListener(listener)
-        awaitClose { userProgressRef.removeEventListener(listener) }
+
+        try {
+            userProgressRef.addValueEventListener(listener)
+            awaitClose { userProgressRef.removeEventListener(listener) }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error setting up Firebase listener for user course progress: ${e.message}", e)
+            trySend(emptyList()) // Send empty list on setup error
+            close(e)
+        }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun getCourseProgress(userId: String, courseId: String): Flow<com.playapp.aiagents.data.model.UserCourseProgress?> = callbackFlow {
         val courseProgressRef = progressRef.child(userId).child(courseId)
+        Log.d(TAG, "Firebase getCourseProgress: Setting up listener for path: course_progress/$userId/$courseId")
+
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
+                Log.d(TAG, "Firebase getCourseProgress onDataChange: path=${snapshot.ref.path}, exists=${snapshot.exists()}")
+
+                if (!snapshot.exists()) {
+                    Log.d(TAG, "Firebase getCourseProgress: No data exists at path course_progress/$userId/$courseId")
+                    trySend(null)
+                    return
+                }
+
                 val progress = snapshot.getValue(com.playapp.aiagents.data.model.UserCourseProgress::class.java)
+                Log.d(TAG, "Firebase getCourseProgress: Loaded progress for $courseId: ${progress?.courseTitle} - ${progress?.progress}")
                 trySend(progress)
             }
 
             override fun onCancelled(error: DatabaseError) {
+                Log.e(TAG, "Firebase getCourseProgress cancelled: ${error.message}")
                 close(error.toException())
             }
         }
-        courseProgressRef.addValueEventListener(listener)
-        awaitClose { courseProgressRef.removeEventListener(listener) }
+
+        try {
+            courseProgressRef.addValueEventListener(listener)
+            awaitClose { courseProgressRef.removeEventListener(listener) }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error setting up Firebase listener for course progress: ${e.message}", e)
+            close(e)
+        }
     }
 
     suspend fun saveCourseProgress(userId: String, courseId: String, progress: com.playapp.aiagents.data.model.UserCourseProgress): Result<Unit> {

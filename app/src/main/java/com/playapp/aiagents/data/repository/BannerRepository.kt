@@ -12,7 +12,16 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.timeout
 import kotlin.time.Duration.Companion.seconds
 
-class BannerRepository(private val firebaseService: FirebaseService = FirebaseService()) {
+class BannerRepository(private val firebaseService: FirebaseService? = null) {
+
+    private val firebaseServiceInstance: FirebaseService? by lazy {
+        try {
+            firebaseService ?: FirebaseService()
+        } catch (e: Exception) {
+            android.util.Log.e("BannerRepository", "Failed to create FirebaseService: ${e.message}")
+            null
+        }
+    }
 
     @OptIn(FlowPreview::class)
     fun getBanners(context: Context): Flow<List<Banner>> = flow {
@@ -24,17 +33,19 @@ class BannerRepository(private val firebaseService: FirebaseService = FirebaseSe
         // Then try to fetch from Firebase and emit if available
         try {
             println("BannerRepository: Attempting to fetch from Firebase")
-            val firebaseBanners = firebaseService.getBanners()
-            firebaseBanners.timeout(5.seconds).catch { e ->
-                println("BannerRepository: Firebase failed with timeout: ${e.message}")
-                e.printStackTrace()
-            }.collect { banners ->
-                println("BannerRepository: Received ${banners.size} banners from Firebase")
-                if (banners.isNotEmpty()) {
-                    println("BannerRepository: Emitting Firebase banners")
-                    emit(banners)
-                } else {
-                    println("BannerRepository: Firebase returned empty list")
+            firebaseServiceInstance?.let { service ->
+                val firebaseBanners = service.getBanners()
+                firebaseBanners.timeout(5.seconds).catch { e ->
+                    println("BannerRepository: Firebase failed with timeout: ${e.message}")
+                    e.printStackTrace()
+                }.collect { banners ->
+                    println("BannerRepository: Received ${banners.size} banners from Firebase")
+                    if (banners.isNotEmpty()) {
+                        println("BannerRepository: Emitting Firebase banners")
+                        emit(banners)
+                    } else {
+                        println("BannerRepository: Firebase returned empty list")
+                    }
                 }
             }
         } catch (e: Exception) {

@@ -31,6 +31,12 @@
         ".read": "$userId === auth.uid",
         ".write": "$userId === auth.uid"
       }
+    },
+    "user_progress": {
+      "$userId": {
+        ".read": "$userId === auth.uid",
+        ".write": "$userId === auth.uid"
+      }
     }
   }
 }

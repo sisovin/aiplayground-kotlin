@@ -3,6 +3,7 @@ package com.playapp.aiagents.ui.playground
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -51,8 +52,13 @@ import androidx.compose.foundation.clickable
 import com.playapp.aiagents.ui.settings.SettingsActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
+import com.playapp.aiagents.data.service.FirebaseService
+import com.playapp.aiagents.data.model.UserCourseProgress
+import com.playapp.aiagents.data.service.FirebaseAuthService
 import androidx.compose.ui.window.Dialog
 import com.playapp.aiagents.ui.video.VideoPlayerDialog
+
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 
 class PlaygroundActivity : ComponentActivity() {
     private val viewModel: AgentViewModel by viewModels {
@@ -70,6 +76,7 @@ class PlaygroundActivity : ComponentActivity() {
     private var chatRepository: ChatRepository? = null
     private var ollamaApiService: OllamaApiService? = null
     private var progressRepository: ProgressRepository? = null
+    private var firebaseService: FirebaseService? = null
     private var startTime: Long = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -92,6 +99,7 @@ class PlaygroundActivity : ComponentActivity() {
             println("PlaygroundActivity: ChatRepository initialized")
 
             progressRepository = ProgressRepository()
+            firebaseService = FirebaseService()
             startTime = System.currentTimeMillis()
 
             // Get Ollama server URL from preferences
@@ -103,14 +111,19 @@ class PlaygroundActivity : ComponentActivity() {
             // Track agent usage
             lifecycleScope.launch {
                 try {
-                    progressRepository?.updateAgentProgress("user_123", agentId, agentId,
-                        com.playapp.aiagents.data.model.AgentProgress(
-                            agentId = agentId,
-                            sessionsCount = 1, // Will be incremented properly later
-                            lastUsed = System.currentTimeMillis()
+                    val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+                    if (userId != null) {
+                        progressRepository?.updateAgentProgress(userId, agentId, agentId,
+                            com.playapp.aiagents.data.model.AgentProgress(
+                                agentId = agentId,
+                                sessionsCount = 1, // Will be incremented properly later
+                                lastUsed = System.currentTimeMillis()
+                            )
                         )
-                    )
-                    println("PlaygroundActivity: Agent progress updated for agent $agentId")
+                        println("PlaygroundActivity: Agent progress updated for agent $agentId")
+                    } else {
+                        println("PlaygroundActivity: User not authenticated, skipping agent progress update")
+                    }
                 } catch (e: Exception) {
                     println("PlaygroundActivity: Error updating agent progress: ${e.message}")
                     // Handle error silently
@@ -128,6 +141,7 @@ class PlaygroundActivity : ComponentActivity() {
                         chatRepository = chatRepository,
                         ollamaApiService = ollamaApiService,
                         progressRepository = progressRepository,
+                        firebaseService = firebaseService,
                         onNavigateToSettings = {
                             val intent = Intent(this@PlaygroundActivity, SettingsActivity::class.java)
                             startActivity(intent)
@@ -162,7 +176,10 @@ class PlaygroundActivity : ComponentActivity() {
 
         lifecycleScope.launch {
             try {
-                progressRepository?.addTimeSpent("user_123", agentId, timeSpent)
+                val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+                if (userId != null && agentId != -1) {
+                    progressRepository?.addTimeSpent(userId, agentId, timeSpent)
+                }
             } catch (e: Exception) {
                 // Handle error silently
             }
@@ -170,7 +187,6 @@ class PlaygroundActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun PlaygroundScreen(
     viewModel: AgentViewModel = viewModel(),
@@ -178,6 +194,7 @@ fun PlaygroundScreen(
     chatRepository: ChatRepository? = null,
     ollamaApiService: OllamaApiService? = null,
     progressRepository: ProgressRepository? = null,
+    firebaseService: FirebaseService? = null,
     onNavigateToSettings: () -> Unit = {},
     onBackPressed: () -> Unit = {}
 ) {
@@ -272,6 +289,13 @@ fun PlaygroundScreen(
     // Progress state
     var progressPercentage by remember { mutableStateOf(0) }
     var isCompleted by remember { mutableStateOf(false) }
+    var courseProgress by remember { mutableStateOf<UserCourseProgress?>(null) }
+
+    // Detailed progress tracking
+    var learnTabCompleted by remember { mutableStateOf(false) }
+    var codeTabCompleted by remember { mutableStateOf(false) }
+    var chatTabInteracted by remember { mutableStateOf(false) }
+    var videosWatched by remember { mutableStateOf(0) }
 
     // Chat state
     var currentModel by remember {
@@ -312,7 +336,54 @@ fun PlaygroundScreen(
     var showVideoPlayer by remember { mutableStateOf(false) }
     var selectedVideo by remember { mutableStateOf<com.playapp.aiagents.data.model.VideoTutorial?>(null) }
 
+    // Auth state
+    val authService = remember { FirebaseAuthService() }
+    var currentUser by remember { mutableStateOf<com.google.firebase.auth.FirebaseUser?>(null) }
+
     val coroutineScope = rememberCoroutineScope()
+
+    // Progress update functions
+    fun updateOverallProgress() {
+        coroutineScope.launch {
+            val userId = currentUser?.uid
+            if (userId != null && firebaseService != null) {
+                val courseId = "course$agentId"
+                val totalLessons = 10 // Base lessons
+                val completedLessons = (if (learnTabCompleted) 3 else 0) +
+                                     (if (codeTabCompleted) 3 else 0) +
+                                     (if (chatTabInteracted) 2 else 0) +
+                                     videosWatched
+
+                firebaseService.updateProgressOnLessonComplete(
+                    userId = userId,
+                    courseId = courseId,
+                    courseTitle = agent?.title ?: "AI Agent Course",
+                    totalLessons = totalLessons
+                ).onSuccess {
+                    val newProgress = completedLessons.toFloat() / totalLessons.toFloat()
+                    progressPercentage = (newProgress * 100).toInt()
+                    println("PlaygroundScreen: Updated progress to ${progressPercentage}%")
+                }.onFailure { e ->
+                    println("PlaygroundScreen: Error updating progress: ${e.message}")
+                }
+            }
+        }
+    }
+
+    fun updateProgressForLearnTab() {
+        learnTabCompleted = true
+        updateOverallProgress()
+    }
+
+    fun updateProgressForCodeTab() {
+        codeTabCompleted = true
+        updateOverallProgress()
+    }
+
+    fun updateProgressForChatInteraction() {
+        chatTabInteracted = true
+        updateOverallProgress()
+    }
 
     // Initialize session
     LaunchedEffect(agentId) {
@@ -324,6 +395,66 @@ fun PlaygroundScreen(
                 messages = emptyList(),
                 createdAt = System.currentTimeMillis()
             )
+        }
+    }
+
+    // Collect auth state
+    LaunchedEffect(authService) {
+        authService.getAuthStateFlow().collect { user ->
+            currentUser = user
+            println("PlaygroundScreen: Auth state changed, user: ${user?.uid}")
+        }
+    }
+
+    // Load course progress from Firebase
+    LaunchedEffect(agentId, firebaseService, currentUser) {
+        val userId = currentUser?.uid ?: return@LaunchedEffect
+        if (agentId != -1 && firebaseService != null) {
+            // Map agentId to courseId (agent 1 -> course1, agent 2 -> course2, etc.)
+            val courseId = "course$agentId"
+            println("PlaygroundActivity: Loading progress for user: $userId, agentId: $agentId, courseId: $courseId")
+            try {
+                Log.d("PlaygroundActivity", "Loading progress for user: $userId, courseId: $courseId")
+                firebaseService.getCourseProgress(userId, courseId).collect { progress ->
+                    println("PlaygroundActivity: Received progress data: $progress")
+                    courseProgress = progress
+                    if (progress != null) {
+                        progressPercentage = (progress.progress * 100).toInt()
+                        isCompleted = progress.completedAt != null
+
+                        // Load detailed progress from custom fields (if stored)
+                        // For now, we'll estimate based on progress percentage
+                        val totalProgress = progress.progress
+                        learnTabCompleted = totalProgress >= 0.25f // 25% for learning tab
+                        codeTabCompleted = totalProgress >= 0.50f  // 50% for code tab
+                        chatTabInteracted = totalProgress >= 0.75f // 75% for chat interaction
+                        videosWatched = (totalProgress * (agent?.videoTutorials?.size ?: 0)).toInt()
+
+                        println("PlaygroundActivity: Detailed progress - Learn: $learnTabCompleted, Code: $codeTabCompleted, Chat: $chatTabInteracted, Videos: $videosWatched")
+                    } else {
+                        progressPercentage = 0
+                        isCompleted = false
+                        learnTabCompleted = false
+                        codeTabCompleted = false
+                        chatTabInteracted = false
+                        videosWatched = 0
+                        println("PlaygroundActivity: Progress is null, setting to 0")
+                    }
+                    Log.d("PlaygroundActivity", "Loaded progress for course $courseId: ${progressPercentage}%")
+                    println("PlaygroundActivity: Final progressPercentage: $progressPercentage")
+                }
+            } catch (e: Exception) {
+                Log.e("PlaygroundActivity", "Error loading course progress: ${e.message}", e)
+                println("PlaygroundActivity: Error loading progress: ${e.message}")
+                progressPercentage = 0
+                isCompleted = false
+                learnTabCompleted = false
+                codeTabCompleted = false
+                chatTabInteracted = false
+                videosWatched = 0
+            }
+        } else {
+            println("PlaygroundActivity: Skipping progress load - agentId: $agentId, firebaseService: $firebaseService, currentUser: $currentUser")
         }
     }
 
@@ -472,17 +603,43 @@ fun PlaygroundScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 4.dp)
             ) {
-                if (!isCompleted) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "${progressPercentage}% complete",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                } else {
+                    if (progressPercentage > 0) {
+                        Text(
+                            text = "Learn: ${if (learnTabCompleted) "✓" else "○"} | Code: ${if (codeTabCompleted) "✓" else "○"} | Chat: ${if (chatTabInteracted) "✓" else "○"} | Videos: $videosWatched/${agent?.videoTutorials?.size ?: 0}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                if (!isCompleted && progressPercentage >= 80) {
                     Button(
                         onClick = {
-                            // Mark as complete logic
-                            isCompleted = true
+                            // Mark course as complete
+                            coroutineScope.launch {
+                                val userId = currentUser?.uid
+                                if (userId != null && firebaseService != null) {
+                                    val courseId = "course$agentId"
+                                    firebaseService.updateProgressOnLessonComplete(
+                                        userId = userId,
+                                        courseId = courseId,
+                                        courseTitle = agent?.title ?: "AI Agent Course",
+                                        totalLessons = 10 // Set a reasonable total
+                                    ).onSuccess {
+                                        isCompleted = true
+                                        progressPercentage = 100
+                                        println("PlaygroundScreen: Successfully marked course as complete")
+                                    }.onFailure { e ->
+                                        println("PlaygroundScreen: Error marking course complete: ${e.message}")
+                                    }
+                                }
+                            }
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
@@ -521,8 +678,8 @@ fun PlaygroundScreen(
                 modifier = Modifier.fillMaxSize()
             ) { page ->
                 when (page) {
-                    0 -> LearnTab(agent)
-                    1 -> CodeTab(agent)
+                    0 -> LearnTab(agent, learnTabCompleted, ::updateProgressForLearnTab)
+                    1 -> CodeTab(agent, codeTabCompleted, ::updateProgressForCodeTab)
                     2 -> ChatTab(
                         agent = agent,
                         currentSession = currentSession,
@@ -532,6 +689,10 @@ fun PlaygroundScreen(
                         isLoading = isLoading,
                         listState = listState,
                         onSendMessage = {
+                            // Mark chat as interacted
+                            if (!chatTabInteracted) {
+                                updateProgressForChatInteraction()
+                            }
                             coroutineScope.launch {
                                 sendMessage(
                                     messageText,
@@ -584,9 +745,21 @@ fun PlaygroundScreen(
                 selectedVideo = video
                 showVideoPlayer = true
                 showVideoTutorials = false
-                // Track video watching progress
+                // Track video watching progress using Firebase
                 coroutineScope.launch {
-                    progressRepository?.markVideoWatched("user_123", agentId, video.id)
+                    val userId = currentUser?.uid
+                    if (userId != null && firebaseService != null) {
+                        firebaseService.updateProgressOnLessonComplete(
+                            userId = userId,
+                            courseId = agentId.toString(),
+                            courseTitle = agent?.title ?: "AI Agent Course",
+                            totalLessons = (agent?.videoTutorials?.size ?: 0) + 2 // Videos + 2 code exercises
+                        ).onSuccess {
+                            println("PlaygroundScreen: Successfully updated progress for video watch")
+                        }.onFailure { e ->
+                            println("PlaygroundScreen: Error updating progress for video watch: ${e.message}")
+                        }
+                    }
                 }
             },
             onDismiss = { showVideoTutorials = false }
@@ -620,7 +793,7 @@ fun PlaygroundScreen(
 
 // Learn Tab
 @Composable
-fun LearnTab(agent: Agent?) {
+fun LearnTab(agent: Agent?, learnTabCompleted: Boolean, onLearnCompleted: () -> Unit) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -647,6 +820,21 @@ fun LearnTab(agent: Agent?) {
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
+                        Spacer(modifier = Modifier.weight(1f))
+                        if (!learnTabCompleted) {
+                            Button(
+                                onClick = onLearnCompleted,
+                                modifier = Modifier.height(32.dp)
+                            ) {
+                                Text("Mark Complete", style = MaterialTheme.typography.labelSmall)
+                            }
+                        } else {
+                            Icon(
+                                Icons.Filled.CheckCircle,
+                                contentDescription = "Completed",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -738,7 +926,7 @@ fun LearnTab(agent: Agent?) {
 
 // Code Tab
 @Composable
-fun CodeTab(agent: Agent?) {
+fun CodeTab(agent: Agent?, codeTabCompleted: Boolean, onCodeCompleted: () -> Unit) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -764,17 +952,18 @@ fun CodeTab(agent: Agent?) {
                             modifier = Modifier.weight(1f)
                         )
 
-                        IconButton(
-                            onClick = { /* Download code */ },
-                            modifier = Modifier.background(
-                                color = Color.Yellow.copy(alpha = 0.1f),
-                                shape = RoundedCornerShape(8.dp)
-                            )
-                        ) {
+                        if (!codeTabCompleted) {
+                            Button(
+                                onClick = onCodeCompleted,
+                                modifier = Modifier.height(32.dp)
+                            ) {
+                                Text("Mark Complete", style = MaterialTheme.typography.labelSmall)
+                            }
+                        } else {
                             Icon(
-                                Icons.Filled.Download,
-                                contentDescription = "Download Code",
-                                tint = Color.Yellow
+                                Icons.Filled.CheckCircle,
+                                contentDescription = "Completed",
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
                     }

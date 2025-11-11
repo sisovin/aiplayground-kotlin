@@ -17,20 +17,31 @@ object CourseProgressSeeder {
 
     /**
      * Seeds sample course progress data for testing
-     * Call this from any Activity: CourseProgressSeeder.seedSampleData(context)
+     * Call this from any Activity: CourseProgressSeeder.seedSampleData(context, userId)
      */
-    fun seedSampleData(context: Context) {
+    fun seedSampleData(context: Context, userId: String? = null) {
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                // Sample user ID (replace with actual user ID when testing)
-                val sampleUserId = "sample_user_123"
+                println("CourseProgressSeeder: seedSampleData called with userId=$userId")
+                // Use provided userId or get current authenticated user
+                val actualUserId = userId ?: com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+                println("CourseProgressSeeder: FirebaseAuth currentUser?.uid = ${com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid}")
+                println("CourseProgressSeeder: actualUserId resolved to $actualUserId")
+                if (actualUserId == null) {
+                    val errorMessage = "❌ No authenticated user found. Please sign in first."
+                    Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
+                    println(errorMessage)
+                    return@launch
+                }
+
+                println("🌱 Seeding sample data for user: $actualUserId")
 
                 val sampleCourses = listOf(
                     UserCourseProgress(
                         id = "course_1",
-                        userId = sampleUserId,
-                        courseId = "course_1",
-                        courseTitle = "Introduction to Machine Learning",
+                        userId = actualUserId,
+                        courseId = "course1",
+                        courseTitle = "LLMs as Operating Systems: Agent Memory",
                         progress = 0.65f,
                         lastAccessed = System.currentTimeMillis().toString(),
                         completedAt = null,
@@ -41,9 +52,9 @@ object CourseProgressSeeder {
                     ),
                     UserCourseProgress(
                         id = "course_2",
-                        userId = sampleUserId,
-                        courseId = "course_2",
-                        courseTitle = "Deep Learning Fundamentals",
+                        userId = actualUserId,
+                        courseId = "course2",
+                        courseTitle = "Foundations of Prompt Engineering (AWS)",
                         progress = 0.30f,
                         lastAccessed = (System.currentTimeMillis() - 86400000).toString(), // 1 day ago
                         completedAt = null,
@@ -54,9 +65,9 @@ object CourseProgressSeeder {
                     ),
                     UserCourseProgress(
                         id = "course_3",
-                        userId = sampleUserId,
-                        courseId = "course_3",
-                        courseTitle = "Natural Language Processing",
+                        userId = actualUserId,
+                        courseId = "course3",
+                        courseTitle = "Introduction to LangGraph",
                         progress = 0.85f,
                         lastAccessed = (System.currentTimeMillis() - 3600000).toString(), // 1 hour ago
                         completedAt = null,

@@ -64,9 +64,16 @@ class CourseDetailActivity : ComponentActivity() {
         // Track that user accessed this course
         lifecycleScope.launch {
             try {
-                progressRepository.updateLastAccessed("user_123", courseId) // TODO: Get actual user ID
+                val currentUser = FirebaseAuth.getInstance().currentUser
+                if (currentUser != null) {
+                    progressRepository.updateLastAccessed(currentUser.uid, courseId)
+                } else {
+                    // User not authenticated, skip tracking
+                    println("CourseDetailActivity: User not authenticated, skipping progress tracking")
+                }
             } catch (e: Exception) {
                 // Handle error silently for now
+                println("CourseDetailActivity: Error updating last accessed: ${e.message}")
             }
         }
 
@@ -87,7 +94,10 @@ class CourseDetailActivity : ComponentActivity() {
 
         lifecycleScope.launch {
             try {
-                progressRepository.addTimeSpent("user_123", courseId, timeSpent) // TODO: Get actual user ID
+                val userId = FirebaseAuth.getInstance().currentUser?.uid
+                if (userId != null && courseId != -1) {
+                    progressRepository.addTimeSpent(userId, courseId, timeSpent)
+                }
             } catch (e: Exception) {
                 // Handle error silently for now
             }
@@ -318,7 +328,10 @@ fun CourseDetailScreen(
                                                 progressRepository?.let { repo ->
                                                     coroutineScope.launch {
                                                         try {
-                                                            repo.markVideoWatched("user_123", courseId, video.id)
+                                                            val userId = FirebaseAuth.getInstance().currentUser?.uid
+                                                            if (userId != null) {
+                                                                repo.markVideoWatched(userId, courseId, video.id)
+                                                            }
                                                         } catch (e: Exception) {
                                                             // Handle error silently
                                                         }
@@ -396,7 +409,10 @@ fun CourseDetailScreen(
                                                 progressRepository?.let { repo ->
                                                     coroutineScope.launch {
                                                         try {
-                                                            repo.markCodeDownloaded("user_123", courseId)
+                                                            val userId = FirebaseAuth.getInstance().currentUser?.uid
+                                                            if (userId != null) {
+                                                                repo.markCodeDownloaded(userId, courseId)
+                                                            }
                                                         } catch (e: Exception) {
                                                             // Handle error silently
                                                         }

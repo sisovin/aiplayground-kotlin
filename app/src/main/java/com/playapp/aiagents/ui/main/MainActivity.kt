@@ -2,6 +2,7 @@ package com.playapp.aiagents.ui.main
 
 import android.os.Bundle
 import android.content.Intent
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -57,7 +58,10 @@ import com.playapp.aiagents.data.model.UserProfile
 import com.playapp.aiagents.data.model.UserCourseProgress
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.TimeoutCancellationException
 import com.playapp.aiagents.data.service.FirebaseAuthService
+import com.playapp.aiagents.utils.CourseProgressSeeder
 
 data class NavItem(val label: String, val icon: ImageVector)
 
@@ -339,18 +343,51 @@ fun DashboardScreen(
         authService.getAuthStateFlow().collect { user ->
             currentUser = user
             isUserLoggedIn = user != null
+            Log.d("MainActivity", "Auth state changed: user=${user?.uid}, isLoggedIn=$isUserLoggedIn")
+            println("MainActivity: Auth state changed - user.uid=${user?.uid}, user.email=${user?.email}, user.displayName=${user?.displayName}")
 
             // Load user profile when user is authenticated
             if (user != null) {
-                firebaseService.getUserProfile(user.uid).collect { profile ->
-                    userProfile = profile
+                Log.d("MainActivity", "Loading data for authenticated user: ${user.uid}")
+                println("MainActivity: Loading data for authenticated user: ${user.uid}")
+
+                // Load user profile with error handling
+                try {
+                    firebaseService.getUserProfile(user.uid).collect { profile ->
+                        userProfile = profile
+                        Log.d("MainActivity", "Loaded user profile: ${profile?.fullName}")
+                    }
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "Failed to load user profile: ${e.message}", e)
+                    userProfile = null
                 }
 
-                // Load course progress for authenticated user
-                firebaseService.getUserCourseProgress(user.uid).collect { progress ->
-                    courseProgress = progress
+                // Load course progress for authenticated user with error handling and timeout
+                try {
+                    Log.d("MainActivity", "Starting to load course progress for user: ${user.uid}")
+                    println("MainActivity: Starting to load course progress for user: ${user.uid}")
+                    withTimeout(10000L) { // 10 second timeout
+                        firebaseService.getUserCourseProgress(user.uid).collect { progress ->
+                            courseProgress = progress
+                            Log.d("MainActivity", "Loaded ${progress.size} course progress items")
+                            println("MainActivity: Loaded ${progress.size} course progress items")
+                            progress.forEach { p ->
+                                Log.d("MainActivity", "Course: ${p.courseTitle}, Progress: ${p.progress}")
+                                println("MainActivity: Course: ${p.courseTitle}, Progress: ${p.progress}")
+                            }
+                        }
+                    }
+                } catch (e: TimeoutCancellationException) {
+                    Log.e("MainActivity", "Timeout loading course progress: ${e.message}", e)
+                    println("MainActivity: Timeout loading course progress: ${e.message}")
+                    courseProgress = emptyList()
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "Failed to load course progress: ${e.message}", e)
+                    println("MainActivity: Failed to load course progress: ${e.message}")
+                    courseProgress = emptyList()
                 }
             } else {
+                Log.d("MainActivity", "User not authenticated, clearing data")
                 userProfile = null
                 courseProgress = emptyList()
             }
@@ -699,12 +736,34 @@ fun DashboardScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
                                 onClick = {
-                                    // CourseProgressSeeder.seedSampleData(activityContext ?: return@Button)
-                                    Toast.makeText(activityContext, "Sample data seeding temporarily disabled", Toast.LENGTH_SHORT).show()
+                                    val userId = currentUser?.uid
+                                    println("MainActivity: Seed button clicked, currentUser=$currentUser, userId=$userId, isUserLoggedIn=$isUserLoggedIn")
+                                    println("MainActivity: Firebase auth current user: ${com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid}")
+                                    if (userId != null) {
+                                        CourseProgressSeeder.seedSampleData(activityContext ?: return@Button, userId)
+                                    } else {
+                                        println("MainActivity: userId is null, cannot seed data")
+                                        Toast.makeText(activityContext, "Please sign in first", Toast.LENGTH_SHORT).show()
+                                    }
                                 },
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text("🔄 Seed Sample Progress Data (Coming Soon)")
+                                Text("🔄 Seed Sample Progress Data")
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                onClick = {
+                                    val userId = currentUser?.uid
+                                    if (userId != null) {
+                                        CourseProgressSeeder.testProgressFunctionality(activityContext ?: return@Button, userId)
+                                    } else {
+                                        Toast.makeText(activityContext, "Please sign in first", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("🧪 Test Firebase Connection")
                             }
                         } else {
                             // Display real course progress data

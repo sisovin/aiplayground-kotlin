@@ -1,0 +1,45 @@
+{
+  "course_progress": {
+    "q1cVMkWkCedL8xlwuDOqawRGy2o1": {
+      "course1": {
+        "id": "course1",
+        "userId": "q1cVMkWkCedL8xlwuDOqawRGy2o1",
+        "courseId": "course1",
+        "courseTitle": "LLMs as Operating Systems: Agent Memory",
+        "progress": 0.65,
+        "lastAccessed": "1731283200000",
+        "completedAt": null,
+        "totalLessons": 10,
+        "completedLessons": 6,
+        "createdAt": "1731196800000",
+        "updatedAt": "1731283200000"
+      },
+      "course2": {
+        "id": "course2",
+        "userId": "q1cVMkWkCedL8xlwuDOqawRGy2o1",
+        "courseId": "course2",
+        "courseTitle": "Foundations of Prompt Engineering (AWS)",
+        "progress": 0.30,
+        "lastAccessed": "1731283200000",
+        "completedAt": null,
+        "totalLessons": 15,
+        "completedLessons": 4,
+        "createdAt": "1731100800000",
+        "updatedAt": "1731283200000"
+      },
+      "course3": {
+        "id": "course3",
+        "userId": "q1cVMkWkCedL8xlwuDOqawRGy2o1",
+        "courseId": "course3",
+        "courseTitle": "Introduction to LangGraph",
+        "progress": 0.85,
+        "lastAccessed": "1731283200000",
+        "completedAt": null,
+        "totalLessons": 12,
+        "completedLessons": 10,
+        "createdAt": "1731014400000",
+        "updatedAt": "1731283200000"
+      }
+    }
+  }
+}
